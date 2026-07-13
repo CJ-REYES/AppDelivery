@@ -1,0 +1,29 @@
+# Dependencias de paquetes y módulos externos
+node_modules/
+jspm_packages/
+
+# Variables de entorno y llaves de seguridad (.env)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+
+# Directorios de salida de compilación e intermediarios
+dist/
+build/
+.next/
+out/
+
+# Archivos de registro y depuración
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# Metadatos propios de entornos de desarrollo y editores
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
