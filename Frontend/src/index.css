@@ -1,1 +1,167 @@
 @import "tailwindcss";
+
+@theme {
+  --font-body: "Inter", sans-serif;
+  --font-display: "Fraunces", serif;
+
+  --color-background: #f1fcf5;
+  --color-surface: #ffffff;
+  --color-panel: #ebf6ef;
+  --color-panel-strong: #dfebe4;
+  --color-primary: #002920;
+  --color-primary-soft: #173f35;
+  --color-accent: #fe6a2b;
+  --color-accent-hover: #e85820;
+  --color-ink: #141e1a;
+  --color-muted: #606b66;
+  --color-line: #d9e2dc;
+  --color-success: #26965b;
+  --color-warning: #e9a321;
+  --color-danger: #ba1a1a;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-width: 320px;
+    margin: 0;
+    background: var(--color-background);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    outline-color: var(--color-accent);
+    outline-offset: 3px;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-7xl px-4 md:px-8 xl:px-12;
+  }
+
+  .card {
+    @apply rounded-2xl border border-line/80 bg-surface shadow-[0_4px_20px_rgba(23,33,29,0.05)];
+  }
+
+  .card-hover {
+    @apply transition duration-300 hover:-translate-y-1 hover:shadow-[0_14px_40px_rgba(23,33,29,0.11)];
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-line bg-white px-4 py-3 text-sm text-ink transition placeholder:text-muted/70 focus:border-primary-soft focus:ring-2 focus:ring-primary-soft/15;
+  }
+
+  .primary-button {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-bold text-white transition hover:bg-accent-hover active:scale-[0.98] disabled:bg-line disabled:text-muted;
+  }
+
+  .secondary-button {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-primary-soft px-6 py-3 text-sm font-bold text-white transition hover:bg-primary active:scale-[0.98];
+  }
+
+  .ghost-button {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line bg-white px-5 py-2.5 text-sm font-semibold text-primary transition hover:border-primary/30 hover:bg-panel;
+  }
+
+  .icon-button {
+    @apply inline-flex size-11 shrink-0 items-center justify-center rounded-full text-primary transition hover:bg-panel active:scale-95;
+  }
+
+  .eyebrow {
+    @apply text-xs font-bold uppercase tracking-[0.18em] text-accent;
+  }
+
+  .section-title {
+    @apply font-display text-3xl font-semibold leading-tight text-primary md:text-4xl;
+  }
+
+  .status-pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold;
+  }
+
+  .dashboard-grid {
+    background-image:
+      linear-gradient(rgba(0, 41, 32, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 41, 32, 0.025) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+}
+
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings: "FILL" 1;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hero-grid {
+  background:
+    radial-gradient(circle at 85% 25%, rgba(193, 236, 221, 0.95), transparent 34%),
+    radial-gradient(circle at 8% 90%, rgba(255, 219, 207, 0.7), transparent 28%),
+    #f1fcf5;
+}
+
+.map-surface {
+  background:
+    linear-gradient(135deg, rgba(193, 236, 221, 0.85), rgba(255, 255, 255, 0.86)),
+    repeating-linear-gradient(35deg, transparent 0 32px, rgba(0, 41, 32, 0.08) 33px 35px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
