@@ -7,9 +7,13 @@ import {
   useLocation,
 } from 'react-router-dom'
 import { Brand } from './components/common/Brand'
+import { AppStateProvider } from './context/AppStateContext'
+import { CheckoutPage } from './pages/client/CheckoutPage'
 import { HomePage } from './pages/client/HomePage'
+import { OrdersPage } from './pages/client/OrdersPage'
 import { SearchPage } from './pages/client/SearchPage'
 import { StorePage } from './pages/client/StorePage'
+import { TrackingPage } from './pages/client/TrackingPage'
 import { LandingPage } from './pages/public/LandingPage'
 import { LoginPage } from './pages/public/LoginPage'
 
@@ -89,25 +93,9 @@ function AppRoutes() {
         <Route element={<SearchPage />} path="/buscar" />
         <Route element={<StorePage />} path="/comercio/:storeId" />
 
-        <Route
-          element={
-            <PendingPage
-              title="Carrito y checkout"
-              description="Este flujo se incorporará en la siguiente entrega del frontend."
-            />
-          }
-          path="/checkout"
-        />
-
-        <Route
-          element={
-            <PendingPage
-              title="Mis pedidos"
-              description="El historial y seguimiento se incorporarán en una entrega posterior."
-            />
-          }
-          path="/pedidos"
-        />
+        <Route element={<CheckoutPage />} path="/checkout" />
+        <Route element={<OrdersPage />} path="/pedidos" />
+        <Route element={<TrackingPage />} path="/seguimiento" />
 
         <Route
           element={
@@ -128,7 +116,9 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
+      <AppStateProvider>
+        <AppRoutes />
+      </AppStateProvider>
     </BrowserRouter>
   )
 }
