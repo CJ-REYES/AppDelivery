@@ -1,6 +1,82 @@
-@Backend_HostAddress = http://localhost:5258
+@Backend_HostAddress = https://localhost:7114
+@AccessToken = REEMPLAZA_CON_EL_ACCESS_TOKEN
+@AddressId = REEMPLAZA_CON_EL_ID_DE_DIRECCION
 
-GET {{Backend_HostAddress}}/weatherforecast/
-Accept: application/json
+### Registrar cliente
+POST {{Backend_HostAddress}}/api/auth/register
+Content-Type: application/json
 
-###
+{
+  "firstName": "Carlos",
+  "lastName": "Reyes",
+  "email": "carlos@example.com",
+  "password": "AppDelivery2026!",
+  "phoneNumber": "9991234567"
+}
+
+### Iniciar sesión
+POST {{Backend_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "carlos@example.com",
+  "password": "AppDelivery2026!"
+}
+
+### Consultar sesión
+GET {{Backend_HostAddress}}/api/auth/me
+Authorization: Bearer {{AccessToken}}
+
+### Renovar access token (usa la cookie HttpOnly)
+POST {{Backend_HostAddress}}/api/auth/refresh
+
+### Actualizar perfil
+PUT {{Backend_HostAddress}}/api/users/me
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "firstName": "Carlos",
+  "lastName": "Reyes",
+  "phoneNumber": "9991234567"
+}
+
+### Crear dirección
+POST {{Backend_HostAddress}}/api/addresses
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "label": "Casa",
+  "street": "Calle 60",
+  "exteriorNumber": "425",
+  "interiorNumber": null,
+  "neighborhood": "Centro",
+  "city": "Mérida",
+  "state": "Yucatán",
+  "postalCode": "97000",
+  "country": "México",
+  "references": "Portón negro",
+  "latitude": 20.9674,
+  "longitude": -89.5926,
+  "isDefault": true
+}
+
+### Listar mis direcciones
+GET {{Backend_HostAddress}}/api/addresses
+Authorization: Bearer {{AccessToken}}
+
+### Marcar dirección predeterminada
+PATCH {{Backend_HostAddress}}/api/addresses/{{AddressId}}/default
+Authorization: Bearer {{AccessToken}}
+
+### Solicitar recuperación
+POST {{Backend_HostAddress}}/api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "carlos@example.com"
+}
+
+### Cerrar sesión
+POST {{Backend_HostAddress}}/api/auth/logout
