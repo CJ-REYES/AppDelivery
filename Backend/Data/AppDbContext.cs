@@ -27,6 +27,10 @@ public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
 public DbSet<Order> Orders => Set<Order>();
 
 public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+public DbSet<DriverProfile> DriverProfiles => Set<DriverProfile>();
+
+public DbSet<DeliveryAssignment> DeliveryAssignments =>
+    Set<DeliveryAssignment>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -42,6 +46,8 @@ ConfigureProduct(modelBuilder);
 ConfigurePaymentMethod(modelBuilder);
 ConfigureOrder(modelBuilder);
 ConfigureOrderItem(modelBuilder);
+ConfigureDriverProfile(modelBuilder);
+ConfigureDeliveryAssignment(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -606,6 +612,126 @@ private static void ConfigureOrderItem(ModelBuilder modelBuilder)
         entity.HasOne(item => item.Product)
             .WithMany(product => product.OrderItems)
             .HasForeignKey(item => item.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+}
+private static void ConfigureDriverProfile(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<DriverProfile>(entity =>
+    {
+        entity.ToTable("driver_profiles");
+
+        entity.HasKey(driver => driver.Id);
+
+        entity.Property(driver => driver.VehicleType)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired();
+
+        entity.Property(driver => driver.ApprovalStatus)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired();
+
+        entity.Property(driver => driver.AvailabilityStatus)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired();
+
+        entity.Property(driver => driver.VehicleBrand)
+            .HasMaxLength(100);
+
+        entity.Property(driver => driver.VehicleModel)
+            .HasMaxLength(100);
+
+        entity.Property(driver => driver.VehicleColor)
+            .HasMaxLength(50);
+
+        entity.Property(driver => driver.VehiclePlate)
+            .HasMaxLength(20);
+
+        entity.Property(driver => driver.DriverLicenseNumber)
+            .HasMaxLength(100);
+
+        entity.Property(driver => driver.ProfilePhotoUrl)
+            .HasMaxLength(2048);
+
+        entity.Property(driver => driver.IdentificationDocumentUrl)
+            .HasMaxLength(2048);
+
+        entity.Property(driver => driver.DriverLicenseDocumentUrl)
+            .HasMaxLength(2048);
+
+        entity.Property(driver => driver.RatingAverage)
+            .HasPrecision(3, 2);
+
+        entity.Property(driver => driver.CurrentLatitude)
+            .HasPrecision(10, 7);
+
+        entity.Property(driver => driver.CurrentLongitude)
+            .HasPrecision(10, 7);
+
+        entity.HasIndex(driver => driver.UserId)
+            .IsUnique();
+
+        entity.HasIndex(driver => new
+        {
+            driver.ApprovalStatus,
+            driver.AvailabilityStatus
+        });
+
+        entity.HasOne(driver => driver.User)
+            .WithOne(user => user.DriverProfile)
+            .HasForeignKey<DriverProfile>(driver => driver.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+}
+
+private static void ConfigureDeliveryAssignment(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<DeliveryAssignment>(entity =>
+    {
+        entity.ToTable("delivery_assignments");
+
+        entity.HasKey(assignment => assignment.Id);
+
+        entity.Property(assignment => assignment.Status)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired();
+
+        entity.Property(assignment => assignment.DriverEarnings)
+            .HasPrecision(10, 2);
+
+        entity.Property(assignment => assignment.RejectionReason)
+            .HasMaxLength(500);
+
+        entity.Property(assignment => assignment.CancellationReason)
+            .HasMaxLength(500);
+
+        entity.Property(assignment => assignment.DriverNotes)
+            .HasMaxLength(500);
+
+        entity.HasIndex(assignment => new
+        {
+            assignment.OrderId,
+            assignment.Status
+        });
+
+        entity.HasIndex(assignment => new
+        {
+            assignment.DriverProfileId,
+            assignment.Status
+        });
+
+        entity.HasOne(assignment => assignment.Order)
+            .WithMany(order => order.DeliveryAssignments)
+            .HasForeignKey(assignment => assignment.OrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasOne(assignment => assignment.DriverProfile)
+            .WithMany(driver => driver.DeliveryAssignments)
+            .HasForeignKey(assignment => assignment.DriverProfileId)
             .OnDelete(DeleteBehavior.Restrict);
     });
 }

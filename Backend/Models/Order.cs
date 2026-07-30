@@ -77,4 +77,7 @@ public sealed class Order
 
     public ICollection<OrderItem> Items { get; set; } =
         new List<OrderItem>();
+        public ICollection<DeliveryAssignment> DeliveryAssignments { get; set; } =
+    new List<DeliveryAssignment>();
+    
 }

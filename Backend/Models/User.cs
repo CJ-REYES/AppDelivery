@@ -35,4 +35,5 @@ public sealed class User
 
 public ICollection<Order> Orders { get; set; } =
     new List<Order>();
+    public DriverProfile? DriverProfile { get; set; }
 }
