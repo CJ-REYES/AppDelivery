@@ -1,13 +1,30 @@
+using Backend.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "No se encontró ConnectionStrings:DefaultConnection."
+    );
+
+var serverVersion = new MariaDbServerVersion(new Version(12, 3, 2));
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        connectionString,
+        serverVersion,
+        mysqlOptions => mysqlOptions.EnableRetryOnFailure()
+    )
+);
+
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -15,30 +32,29 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.MapControllers();
 
-var summaries = new[]
+app.MapGet("/api/health/database", async (AppDbContext database) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    var connected = await database.Database.CanConnectAsync();
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
+    if (!connected)
+    {
+        return Results.Problem(
+            title: "No fue posible conectar con MariaDB.",
+            statusCode: StatusCodes.Status503ServiceUnavailable
+        );
+    }
+
+    return Results.Ok(new
+    {
+        status = "ok",
+        message = "Conexión con MariaDB establecida correctamente.",
+        database = database.Database.GetDbConnection().Database,
+        provider = database.Database.ProviderName
+    });
 })
-.WithName("GetWeatherForecast")
+.WithName("DatabaseHealth")
 .WithOpenApi();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
