@@ -27,4 +27,7 @@ public sealed class User
 
     public ICollection<Address> Addresses { get; set; } =
         new List<Address>();
+
+    public ICollection<Store> OwnedStores { get; set; } =
+    new List<Store>();    
 }
