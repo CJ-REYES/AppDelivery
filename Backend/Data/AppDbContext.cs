@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Data;
 
-public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
+public sealed partial class AppDbContext(DbContextOptions<AppDbContext> options)
     : DbContext(options)
 {
     public DbSet<User> Users => Set<User>();
@@ -48,6 +48,8 @@ ConfigureOrder(modelBuilder);
 ConfigureOrderItem(modelBuilder);
 ConfigureDriverProfile(modelBuilder);
 ConfigureDeliveryAssignment(modelBuilder);
+        ConfigureRefreshToken(modelBuilder);
+        ConfigurePasswordResetToken(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
