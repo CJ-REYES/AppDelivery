@@ -29,4 +29,6 @@ public sealed class Product
     public Store Store { get; set; } = null!;
 
     public ProductCategory ProductCategory { get; set; } = null!;
+    public ICollection<OrderItem> OrderItems { get; set; } =
+    new List<OrderItem>();
 }

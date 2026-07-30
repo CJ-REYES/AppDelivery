@@ -35,4 +35,6 @@ public sealed class Address
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public User User { get; set; } = null!;
+    public ICollection<Order> Orders { get; set; } =
+    new List<Order>();
 }

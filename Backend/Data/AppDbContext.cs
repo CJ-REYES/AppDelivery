@@ -22,6 +22,11 @@ public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
 
 public DbSet<Product> Products => Set<Product>();
 
+public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
+
+public DbSet<Order> Orders => Set<Order>();
+
+public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -34,6 +39,9 @@ public DbSet<Product> Products => Set<Product>();
 ConfigureStore(modelBuilder);
 ConfigureProductCategory(modelBuilder);
 ConfigureProduct(modelBuilder);
+ConfigurePaymentMethod(modelBuilder);
+ConfigureOrder(modelBuilder);
+ConfigureOrderItem(modelBuilder);
     }
 
     private static void ConfigureUser(ModelBuilder modelBuilder)
@@ -400,6 +408,204 @@ private static void ConfigureProduct(ModelBuilder modelBuilder)
         entity.HasOne(product => product.ProductCategory)
             .WithMany(category => category.Products)
             .HasForeignKey(product => product.ProductCategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+    });
+}
+private static void ConfigurePaymentMethod(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<PaymentMethod>(entity =>
+    {
+        entity.ToTable("payment_methods");
+
+        entity.HasKey(method => method.Id);
+
+        entity.Property(method => method.Type)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired();
+
+        entity.Property(method => method.DisplayName)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        entity.Property(method => method.Provider)
+            .HasMaxLength(50);
+
+        entity.Property(method => method.ProviderPaymentMethodId)
+            .HasMaxLength(255);
+
+        entity.Property(method => method.CardBrand)
+            .HasMaxLength(50);
+
+        entity.Property(method => method.LastFourDigits)
+            .HasMaxLength(4);
+
+        entity.HasIndex(method => method.UserId);
+
+        entity.HasOne(method => method.User)
+            .WithMany(user => user.PaymentMethods)
+            .HasForeignKey(method => method.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+}
+
+private static void ConfigureOrder(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<Order>(entity =>
+    {
+        entity.ToTable("orders");
+
+        entity.HasKey(order => order.Id);
+
+        entity.Property(order => order.OrderNumber)
+            .HasMaxLength(30)
+            .IsRequired();
+
+        entity.HasIndex(order => order.OrderNumber)
+            .IsUnique();
+
+        entity.Property(order => order.Status)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired();
+
+        entity.Property(order => order.PaymentStatus)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired();
+
+        entity.Property(order => order.Subtotal)
+            .HasPrecision(10, 2);
+
+        entity.Property(order => order.DeliveryFee)
+            .HasPrecision(10, 2);
+
+        entity.Property(order => order.ServiceFee)
+            .HasPrecision(10, 2);
+
+        entity.Property(order => order.DiscountAmount)
+            .HasPrecision(10, 2);
+
+        entity.Property(order => order.Total)
+            .HasPrecision(10, 2);
+
+        entity.Property(order => order.DeliveryRecipientName)
+            .HasMaxLength(200)
+            .IsRequired();
+
+        entity.Property(order => order.DeliveryPhoneNumber)
+            .HasMaxLength(20)
+            .IsRequired();
+
+        entity.Property(order => order.DeliveryStreet)
+            .HasMaxLength(150)
+            .IsRequired();
+
+        entity.Property(order => order.DeliveryExteriorNumber)
+            .HasMaxLength(20)
+            .IsRequired();
+
+        entity.Property(order => order.DeliveryInteriorNumber)
+            .HasMaxLength(20);
+
+        entity.Property(order => order.DeliveryNeighborhood)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        entity.Property(order => order.DeliveryCity)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        entity.Property(order => order.DeliveryState)
+            .HasMaxLength(100)
+            .IsRequired();
+
+        entity.Property(order => order.DeliveryPostalCode)
+            .HasMaxLength(10)
+            .IsRequired();
+
+        entity.Property(order => order.DeliveryReferences)
+            .HasMaxLength(500);
+
+        entity.Property(order => order.DeliveryLatitude)
+            .HasPrecision(10, 7);
+
+        entity.Property(order => order.DeliveryLongitude)
+            .HasPrecision(10, 7);
+
+        entity.Property(order => order.CustomerNotes)
+            .HasMaxLength(500);
+
+        entity.Property(order => order.CancellationReason)
+            .HasMaxLength(500);
+
+        entity.HasIndex(order => new
+        {
+            order.CustomerId,
+            order.CreatedAt
+        });
+
+        entity.HasIndex(order => new
+        {
+            order.StoreId,
+            order.Status
+        });
+
+        entity.HasOne(order => order.Customer)
+            .WithMany(user => user.Orders)
+            .HasForeignKey(order => order.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasOne(order => order.Store)
+            .WithMany(store => store.Orders)
+            .HasForeignKey(order => order.StoreId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        entity.HasOne(order => order.DeliveryAddress)
+            .WithMany(address => address.Orders)
+            .HasForeignKey(order => order.DeliveryAddressId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        entity.HasOne(order => order.PaymentMethod)
+            .WithMany(method => method.Orders)
+            .HasForeignKey(order => order.PaymentMethodId)
+            .OnDelete(DeleteBehavior.SetNull);
+    });
+}
+
+private static void ConfigureOrderItem(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<OrderItem>(entity =>
+    {
+        entity.ToTable("order_items");
+
+        entity.HasKey(item => item.Id);
+
+        entity.Property(item => item.ProductName)
+            .HasMaxLength(150)
+            .IsRequired();
+
+        entity.Property(item => item.UnitPrice)
+            .HasPrecision(10, 2);
+
+        entity.Property(item => item.TotalPrice)
+            .HasPrecision(10, 2);
+
+        entity.Property(item => item.Notes)
+            .HasMaxLength(500);
+
+        entity.HasIndex(item => item.OrderId);
+
+        entity.HasIndex(item => item.ProductId);
+
+        entity.HasOne(item => item.Order)
+            .WithMany(order => order.Items)
+            .HasForeignKey(item => item.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        entity.HasOne(item => item.Product)
+            .WithMany(product => product.OrderItems)
+            .HasForeignKey(item => item.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
     });
 }

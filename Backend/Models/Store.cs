@@ -69,4 +69,6 @@ public sealed class Store
 
     public ICollection<Product> Products { get; set; } =
         new List<Product>();
+        public ICollection<Order> Orders { get; set; } =
+    new List<Order>();
 }

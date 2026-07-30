@@ -30,4 +30,9 @@ public sealed class User
 
     public ICollection<Store> OwnedStores { get; set; } =
     new List<Store>();    
+    public ICollection<PaymentMethod> PaymentMethods { get; set; } =
+    new List<PaymentMethod>();
+
+public ICollection<Order> Orders { get; set; } =
+    new List<Order>();
 }
