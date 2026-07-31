@@ -442,6 +442,42 @@ namespace Backend.Data.Migrations
                     b.ToTable("order_items", (string)null);
                 });
 
+            modelBuilder.Entity("Backend.Models.OrderStatusHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("ChangedByRole")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<Guid?>("ChangedByUserId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId", "CreatedAt");
+
+                    b.ToTable("order_status_history", (string)null);
+                });
+
             modelBuilder.Entity("Backend.Models.PaymentMethod", b =>
                 {
                     b.Property<Guid>("Id")
@@ -534,6 +570,11 @@ namespace Backend.Data.Migrations
                     b.Property<decimal>("Price")
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("StockQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(100);
 
                     b.Property<Guid>("ProductCategoryId")
                         .HasColumnType("char(36)");
@@ -1066,6 +1107,17 @@ namespace Backend.Data.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Backend.Models.OrderStatusHistory", b =>
+                {
+                    b.HasOne("Backend.Models.Order", "Order")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("Backend.Models.PaymentMethod", b =>
                 {
                     b.HasOne("Backend.Models.User", "User")
@@ -1182,6 +1234,8 @@ namespace Backend.Data.Migrations
                     b.Navigation("DeliveryAssignments");
 
                     b.Navigation("Items");
+
+                    b.Navigation("StatusHistory");
                 });
 
             modelBuilder.Entity("Backend.Models.PaymentMethod", b =>

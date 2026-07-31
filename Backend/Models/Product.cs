@@ -20,6 +20,8 @@ public sealed class Product
 
     public bool IsFeatured { get; set; }
 
+    public int StockQuantity { get; set; } = 100;
+
     public int PreparationTimeMinutes { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

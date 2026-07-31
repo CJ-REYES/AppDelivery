@@ -53,8 +53,10 @@ dotnet ef database update \
   --context AppDbContext
 ```
 
-Después de `AddAuthCore`, la base contiene 16 tablas: las 13 tablas originales,
-`refresh_tokens`, `password_reset_tokens` y `__EFMigrationsHistory`.
+Después de `AddOrderWorkflow`, la base contiene 17 tablas: las 13 tablas
+originales, `refresh_tokens`, `password_reset_tokens`,
+`order_status_history` y `__EFMigrationsHistory`. La misma migración agrega
+`StockQuantity` a `products`.
 
 ## Ejecución y pruebas
 
@@ -139,8 +141,35 @@ que el recurso pertenezca al usuario autenticado.
 | `GET/POST` | `/api/merchant/products` | Listar o crear productos |
 | `PUT/DELETE` | `/api/merchant/products/{id}` | Modificar un producto propio |
 
-Esta entrega utiliza el esquema creado por `InitialCreate`; no requiere una
-migración adicional.
+## Pedidos y métodos de pago
+
+El checkout crea el pedido, sus líneas y el primer evento de estado en una
+transacción. La API vuelve a calcular precios y cargos, valida la propiedad de
+la dirección y del método de pago, y descuenta existencias; no confía en
+totales enviados por React.
+
+| Método | Ruta | Función |
+|---|---|---|
+| `POST` | `/api/orders` | Crear un pedido real |
+| `GET` | `/api/orders` | Historial del cliente |
+| `GET` | `/api/orders/latest` | Obtener el pedido más reciente |
+| `GET` | `/api/orders/{id}` | Consultar un pedido propio |
+| `PATCH` | `/api/orders/{id}/cancel` | Cancelar y devolver existencias |
+| `GET` | `/api/merchant/orders` | Historial de pedidos del comercio |
+| `GET` | `/api/merchant/orders/summary` | Resumen de pedidos vendidos |
+| `GET` | `/api/merchant/orders/{id}` | Consultar un pedido del comercio |
+| `PATCH` | `/api/merchant/orders/{id}/status` | Confirmar, preparar o dejar listo |
+| `GET/POST` | `/api/payment-methods` | Listar o registrar métodos enmascarados |
+| `PATCH` | `/api/payment-methods/{id}/default` | Marcar como predeterminado |
+| `DELETE` | `/api/payment-methods/{id}` | Eliminar un método propio |
+
+Solo se conservan metadatos enmascarados de tarjeta. La API no guarda el
+número completo ni el CVV. Esta entrega registra el pedido y su referencia de
+pago, pero no realiza un cobro bancario real.
+
+Los estados administrados en esta etapa son `Pending`, `Confirmed`,
+`Preparing`, `ReadyForPickup` y `Cancelled`. Cada transición queda registrada
+en `order_status_history`; reparto y entrega se integran en la etapa siguiente.
 
 La cobertura de cada acción de los controladores y su consumidor React se
 documenta en `docs/05-trazabilidad.md`.
