@@ -6,6 +6,7 @@ const clientLinks = [
   ['Explorar', '/inicio'],
   ['Ofertas', '/buscar'],
   ['Mis pedidos', '/pedidos'],
+  ['Vender', '/unete'],
 ] as const
 
 export function ClientHeader({ cartCount = 2 }: { cartCount?: number }) {
