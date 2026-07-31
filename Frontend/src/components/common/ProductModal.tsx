@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Product } from '../../data/mockData'
+import type { Product } from '../../types/catalog'
 import { Icon } from './Icon'
 
 type ProductModalProps = {
@@ -20,7 +20,17 @@ export function ProductModal({ product, onClose, onConfirm }: ProductModalProps)
     >
       <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-t-[28px] bg-white shadow-2xl sm:rounded-[28px]">
         <div className="relative aspect-[16/8] overflow-hidden bg-panel">
-          <img alt={product.name} className="h-full w-full object-cover" src={product.image} />
+          {product.imageUrl ? (
+            <img
+              alt={product.name}
+              className="h-full w-full object-cover"
+              src={product.imageUrl}
+            />
+          ) : (
+            <div className="grid h-full place-items-center text-primary">
+              <Icon className="text-[56px]" name="restaurant" />
+            </div>
+          )}
           <button
             aria-label="Cerrar"
             className="absolute right-4 top-4 grid size-11 place-items-center rounded-full bg-white/90 text-primary shadow-md"

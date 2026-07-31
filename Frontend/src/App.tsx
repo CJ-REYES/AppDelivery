@@ -1,21 +1,30 @@
-import { useEffect } from 'react'
+import { type ReactNode, useEffect } from 'react'
 import {
   BrowserRouter,
   Link,
+  Navigate,
   Route,
   Routes,
   useLocation,
 } from 'react-router-dom'
 import { Brand } from './components/common/Brand'
 import { AppStateProvider } from './context/AppStateContext'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { CheckoutPage } from './pages/client/CheckoutPage'
 import { HomePage } from './pages/client/HomePage'
 import { OrdersPage } from './pages/client/OrdersPage'
+import { ProfilePage } from './pages/client/ProfilePage'
 import { SearchPage } from './pages/client/SearchPage'
 import { StorePage } from './pages/client/StorePage'
 import { TrackingPage } from './pages/client/TrackingPage'
+import { MerchantDashboardPage } from './pages/merchant/MerchantDashboardPage'
+import { MerchantProductsPage } from './pages/merchant/MerchantProductsPage'
+import { MerchantProfilePage } from './pages/merchant/MerchantProfilePage'
+import { MerchantRegistrationPage } from './pages/merchant/MerchantRegistrationPage'
 import { LandingPage } from './pages/public/LandingPage'
 import { LoginPage } from './pages/public/LoginPage'
+import { PasswordRecoveryPage } from './pages/public/PasswordRecoveryPage'
+import { RoleOnboardingPage } from './pages/public/RoleOnboardingPage'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -25,35 +34,6 @@ function ScrollToTop() {
   }, [pathname])
 
   return null
-}
-
-type PendingPageProps = {
-  title: string
-  description: string
-}
-
-function PendingPage({ title, description }: PendingPageProps) {
-  return (
-    <main className="grid min-h-screen place-items-center bg-background p-6 text-center">
-      <div>
-        <Brand />
-
-        <p className="eyebrow mt-10">Próxima entrega</p>
-
-        <h1 className="mt-3 font-display text-5xl font-semibold text-primary">
-          {title}
-        </h1>
-
-        <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted">
-          {description}
-        </p>
-
-        <Link className="primary-button mt-7" to="/inicio">
-          Volver al inicio
-        </Link>
-      </div>
-    </main>
-  )
 }
 
 function NotFoundPage() {
@@ -80,6 +60,40 @@ function NotFoundPage() {
   )
 }
 
+function RequireAuth({
+  children,
+  role,
+}: {
+  children: ReactNode
+  role?: string
+}) {
+  const { isAuthenticated, isReady, user } = useAuth()
+  const location = useLocation()
+
+  if (!isReady) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-background text-muted">
+        Cargando sesión…
+      </main>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Navigate
+        replace
+        to={`/login?returnTo=${encodeURIComponent(location.pathname)}`}
+      />
+    )
+  }
+
+  if (role && !user?.roles.includes(role)) {
+    return <Navigate replace to="/registro-comercio" />
+  }
+
+  return children
+}
+
 function AppRoutes() {
   return (
     <>
@@ -88,6 +102,11 @@ function AppRoutes() {
       <Routes>
         <Route element={<LandingPage />} path="/" />
         <Route element={<LoginPage />} path="/login" />
+        <Route
+          element={<PasswordRecoveryPage />}
+          path="/recuperar-contrasena"
+        />
+        <Route element={<RoleOnboardingPage />} path="/unete" />
 
         <Route element={<HomePage />} path="/inicio" />
         <Route element={<SearchPage />} path="/buscar" />
@@ -99,10 +118,42 @@ function AppRoutes() {
 
         <Route
           element={
-            <PendingPage
-              title="Perfil del cliente"
-              description="La administración del perfil se incorporará en una entrega posterior."
-            />
+            <RequireAuth>
+              <MerchantRegistrationPage />
+            </RequireAuth>
+          }
+          path="/registro-comercio"
+        />
+        <Route
+          element={
+            <RequireAuth role="Merchant">
+              <MerchantDashboardPage />
+            </RequireAuth>
+          }
+          path="/mi-comercio"
+        />
+        <Route
+          element={
+            <RequireAuth role="Merchant">
+              <MerchantProductsPage />
+            </RequireAuth>
+          }
+          path="/mi-comercio/productos"
+        />
+        <Route
+          element={
+            <RequireAuth role="Merchant">
+              <MerchantProfilePage />
+            </RequireAuth>
+          }
+          path="/mi-comercio/perfil"
+        />
+
+        <Route
+          element={
+            <RequireAuth>
+              <ProfilePage />
+            </RequireAuth>
           }
           path="/perfil"
         />
@@ -116,9 +167,11 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AppStateProvider>
-        <AppRoutes />
-      </AppStateProvider>
+      <AuthProvider>
+        <AppStateProvider>
+          <AppRoutes />
+        </AppStateProvider>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

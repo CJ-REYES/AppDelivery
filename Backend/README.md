@@ -105,3 +105,42 @@ direcciones del usuario autenticado.
 | `PATCH` | `/api/addresses/{id}/default` | Marcar como predeterminada |
 
 Los ejemplos completos están en `Backend/Backend.http`.
+
+## Catálogo público
+
+Las consultas públicas solo devuelven comercios activos y productos
+disponibles cuyas categorías estén activas.
+
+| Método | Ruta | Función |
+|---|---|---|
+| `GET` | `/api/catalog/store-categories` | Listar tipos de comercio |
+| `GET` | `/api/catalog/stores` | Buscar y filtrar comercios |
+| `GET` | `/api/catalog/stores/{storeId}` | Consultar un comercio |
+| `GET` | `/api/catalog/stores/{storeId}/products` | Consultar sus productos |
+
+`GET /api/catalog/stores` acepta `search`, `storeCategoryId` y `openOnly`.
+La búsqueda también considera los nombres y descripciones de los productos.
+
+## Administración del comercio
+
+`POST /api/merchant/store` requiere una sesión de usuario y asigna el rol
+`Merchant`. Después debe renovarse el access token mediante
+`POST /api/auth/refresh`. Las demás rutas exigen el rol `Merchant` y verifican
+que el recurso pertenezca al usuario autenticado.
+
+| Método | Ruta | Función |
+|---|---|---|
+| `POST` | `/api/merchant/store` | Registrar mi comercio |
+| `GET` | `/api/merchant/store` | Consultar mi comercio |
+| `PUT` | `/api/merchant/store` | Actualizar mi comercio |
+| `DELETE` | `/api/merchant/store` | Desactivar mi comercio |
+| `GET/POST` | `/api/merchant/categories` | Listar o crear categorías |
+| `PUT/DELETE` | `/api/merchant/categories/{id}` | Modificar una categoría propia |
+| `GET/POST` | `/api/merchant/products` | Listar o crear productos |
+| `PUT/DELETE` | `/api/merchant/products/{id}` | Modificar un producto propio |
+
+Esta entrega utiliza el esquema creado por `InitialCreate`; no requiere una
+migración adicional.
+
+La cobertura de cada acción de los controladores y su consumidor React se
+documenta en `docs/05-trazabilidad.md`.

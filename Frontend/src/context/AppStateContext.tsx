@@ -3,7 +3,6 @@ import {
   createContext,
   type ReactNode,
   useContext,
-  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -160,39 +159,10 @@ const defaultState: AppState = {
   },
 }
 
-const STORAGE_KEY = 'appdelivery-demo-state-v2'
 const AppStateContext = createContext<AppStateContextValue | null>(null)
 
-function readStoredState(): AppState {
-  if (typeof window === 'undefined') return defaultState
-
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY)
-    if (!stored) return defaultState
-    const parsed = JSON.parse(stored) as Partial<AppState>
-
-    return {
-      profile: { ...defaultState.profile, ...parsed.profile },
-      addresses: parsed.addresses ?? defaultState.addresses,
-      paymentMethods: parsed.paymentMethods ?? defaultState.paymentMethods,
-      merchant: { ...defaultState.merchant, ...parsed.merchant },
-      driver: { ...defaultState.driver, ...parsed.driver },
-    }
-  } catch {
-    return defaultState
-  }
-}
-
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AppState>(readStoredState)
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch {
-      // La demostración continúa aunque el navegador bloquee el almacenamiento local.
-    }
-  }, [state])
+  const [state, setState] = useState<AppState>(defaultState)
 
   const value = useMemo<AppStateContextValue>(
     () => ({
