@@ -6,23 +6,24 @@ import { ProductModal } from '../../components/common/ProductModal'
 import { SectionHeading } from '../../components/common/SectionHeading'
 import { ClientHeader } from '../../components/layout/ClientHeader'
 import { SiteFooter } from '../../components/layout/SiteFooter'
+import { useAppState } from '../../context/AppStateContext'
 import { catalogApi } from '../../services/catalogApi'
 import type { Product, StoreDetail } from '../../types/catalog'
-
-type CartLine = {
-  product: Product
-  quantity: number
-}
 
 export function StorePage() {
   const { storeId = '' } = useParams()
   const [store, setStore] = useState<StoreDetail | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [cart, setCart] = useState<CartLine[]>([])
   const [added, setAdded] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const {
+    cart,
+    addCartProduct,
+    updateCartQuantity,
+  } = useAppState()
+  const storeCart = cart.filter((item) => item.storeId === storeId)
 
   useEffect(() => {
     let active = true
@@ -57,13 +58,13 @@ export function StorePage() {
 
   const cartTotal = useMemo(
     () =>
-      cart.reduce(
-        (total, line) => total + line.product.price * line.quantity,
+      storeCart.reduce(
+        (total, line) => total + line.price * line.quantity,
         0,
       ),
-    [cart],
+    [storeCart],
   )
-  const itemCount = cart.reduce(
+  const itemCount = storeCart.reduce(
     (total, line) => total + line.quantity,
     0,
   )
@@ -83,37 +84,14 @@ export function StorePage() {
   )
 
   function addProduct(product: Product, quantity = 1) {
-    setCart((current) => {
-      const existing = current.find(
-        (line) => line.product.id === product.id,
-      )
-      if (existing) {
-        return current.map((line) =>
-          line.product.id === product.id
-            ? { ...line, quantity: line.quantity + quantity }
-            : line,
-        )
-      }
-      return [...current, { product, quantity }]
-    })
+    addCartProduct(product, quantity)
     setSelectedProduct(null)
     setAdded(true)
     window.setTimeout(() => setAdded(false), 1600)
   }
 
   function updateLine(id: string, delta: number) {
-    setCart((current) =>
-      current
-        .map((line) =>
-          line.product.id === id
-            ? {
-                ...line,
-                quantity: Math.max(0, line.quantity + delta),
-              }
-            : line,
-        )
-        .filter((line) => line.quantity > 0),
-    )
+    updateCartQuantity(id, delta)
   }
 
   if (loading) {
@@ -307,28 +285,28 @@ export function StorePage() {
                 </span>
               </div>
               <div className="mt-5 space-y-4">
-                {cart.length ? (
-                  cart.map((line) => (
+                {storeCart.length ? (
+                  storeCart.map((line) => (
                     <div
                       className="flex items-center gap-3"
-                      key={line.product.id}
+                      key={line.productId}
                     >
                       <span className="grid size-12 place-items-center rounded-xl bg-panel text-primary">
                         <Icon name="restaurant" />
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold text-primary">
-                          {line.product.name}
+                          {line.name}
                         </p>
                         <p className="text-xs text-muted">
-                          ${line.product.price.toFixed(2)} MXN
+                          ${line.price.toFixed(2)} MXN
                         </p>
                       </div>
                       <div className="flex items-center rounded-full border border-line">
                         <button
                           aria-label="Disminuir"
                           className="grid size-8 place-items-center"
-                          onClick={() => updateLine(line.product.id, -1)}
+                          onClick={() => updateLine(line.productId, -1)}
                           type="button"
                         >
                           <Icon className="text-[17px]" name="remove" />
@@ -339,7 +317,7 @@ export function StorePage() {
                         <button
                           aria-label="Aumentar"
                           className="grid size-8 place-items-center"
-                          onClick={() => updateLine(line.product.id, 1)}
+                          onClick={() => updateLine(line.productId, 1)}
                           type="button"
                         >
                           <Icon className="text-[17px]" name="add" />
@@ -360,7 +338,7 @@ export function StorePage() {
               </div>
               <Link
                 className={`primary-button mt-5 w-full ${
-                  cart.length ? '' : 'pointer-events-none opacity-50'
+                  storeCart.length ? '' : 'pointer-events-none opacity-50'
                 }`}
                 to="/checkout"
               >

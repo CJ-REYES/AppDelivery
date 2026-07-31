@@ -4,6 +4,8 @@
 @StoreId = REEMPLAZA_CON_EL_ID_DEL_COMERCIO
 @ProductCategoryId = REEMPLAZA_CON_EL_ID_DE_CATEGORIA
 @ProductId = REEMPLAZA_CON_EL_ID_DEL_PRODUCTO
+@PaymentMethodId = REEMPLAZA_CON_EL_ID_DEL_METODO_DE_PAGO
+@OrderId = REEMPLAZA_CON_EL_ID_DEL_PEDIDO
 
 ### Registrar cliente
 POST {{Backend_HostAddress}}/api/auth/register
@@ -146,6 +148,7 @@ Content-Type: application/json
   "imageUrl": "https://example.com/poc-chuc.jpg",
   "isAvailable": true,
   "isFeatured": true,
+  "stockQuantity": 20,
   "preparationTimeMinutes": 25
 }
 
@@ -168,5 +171,59 @@ Content-Type: application/json
   "imageUrl": "https://example.com/poc-chuc.jpg",
   "isAvailable": true,
   "isFeatured": true,
+  "stockQuantity": 20,
   "preparationTimeMinutes": 25
+}
+
+### Registrar método de pago enmascarado
+POST {{Backend_HostAddress}}/api/payment-methods
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "type": "Card",
+  "displayName": "Visa •••• 4242",
+  "provider": null,
+  "cardBrand": "Visa",
+  "lastFourDigits": "4242",
+  "expirationMonth": 8,
+  "expirationYear": 2029,
+  "isDefault": true
+}
+
+### Crear pedido desde el checkout
+POST {{Backend_HostAddress}}/api/orders
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "storeId": "{{StoreId}}",
+  "deliveryAddressId": "{{AddressId}}",
+  "paymentMethodId": "{{PaymentMethodId}}",
+  "customerNotes": "Entregar en recepción.",
+  "items": [
+    {
+      "productId": "{{ProductId}}",
+      "quantity": 2,
+      "notes": "Sin cebolla."
+    }
+  ]
+}
+
+### Historial del cliente
+GET {{Backend_HostAddress}}/api/orders
+Authorization: Bearer {{AccessToken}}
+
+### Historial del comercio
+GET {{Backend_HostAddress}}/api/merchant/orders
+Authorization: Bearer {{AccessToken}}
+
+### Confirmar pedido como comercio
+PATCH {{Backend_HostAddress}}/api/merchant/orders/{{OrderId}}/status
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "status": "Confirmed",
+  "note": "Pedido confirmado por el comercio."
 }

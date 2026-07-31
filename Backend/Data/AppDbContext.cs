@@ -27,6 +27,10 @@ public DbSet<PaymentMethod> PaymentMethods => Set<PaymentMethod>();
 public DbSet<Order> Orders => Set<Order>();
 
 public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
+public DbSet<OrderStatusHistory> OrderStatusHistory =>
+    Set<OrderStatusHistory>();
+
 public DbSet<DriverProfile> DriverProfiles => Set<DriverProfile>();
 
 public DbSet<DeliveryAssignment> DeliveryAssignments =>
@@ -46,6 +50,7 @@ ConfigureProduct(modelBuilder);
 ConfigurePaymentMethod(modelBuilder);
 ConfigureOrder(modelBuilder);
 ConfigureOrderItem(modelBuilder);
+ConfigureOrderStatusHistory(modelBuilder);
 ConfigureDriverProfile(modelBuilder);
 ConfigureDeliveryAssignment(modelBuilder);
         ConfigureRefreshToken(modelBuilder);
@@ -400,6 +405,9 @@ private static void ConfigureProduct(ModelBuilder modelBuilder)
         entity.Property(product => product.ImageUrl)
             .HasMaxLength(2048);
 
+        entity.Property(product => product.StockQuantity)
+            .HasDefaultValue(100);
+
         entity.HasIndex(product => new
         {
             product.StoreId,
@@ -617,6 +625,40 @@ private static void ConfigureOrderItem(ModelBuilder modelBuilder)
             .OnDelete(DeleteBehavior.Restrict);
     });
 }
+
+private static void ConfigureOrderStatusHistory(ModelBuilder modelBuilder)
+{
+    modelBuilder.Entity<OrderStatusHistory>(entity =>
+    {
+        entity.ToTable("order_status_history");
+
+        entity.HasKey(history => history.Id);
+
+        entity.Property(history => history.Status)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .IsRequired();
+
+        entity.Property(history => history.ChangedByRole)
+            .HasMaxLength(30)
+            .IsRequired();
+
+        entity.Property(history => history.Note)
+            .HasMaxLength(500);
+
+        entity.HasIndex(history => new
+        {
+            history.OrderId,
+            history.CreatedAt
+        });
+
+        entity.HasOne(history => history.Order)
+            .WithMany(order => order.StatusHistory)
+            .HasForeignKey(history => history.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+    });
+}
+
 private static void ConfigureDriverProfile(ModelBuilder modelBuilder)
 {
     modelBuilder.Entity<DriverProfile>(entity =>

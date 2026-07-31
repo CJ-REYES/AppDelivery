@@ -31,6 +31,7 @@ internal static class CatalogMapper
             product.ImageUrl,
             product.IsAvailable,
             product.IsFeatured,
+            product.StockQuantity,
             product.PreparationTimeMinutes,
             product.CreatedAt,
             product.UpdatedAt

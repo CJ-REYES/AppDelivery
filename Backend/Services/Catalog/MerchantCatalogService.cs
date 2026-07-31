@@ -531,6 +531,7 @@ public sealed class MerchantCatalogService(
         product.ImageUrl = NormalizeOptional(request.ImageUrl);
         product.IsAvailable = request.IsAvailable;
         product.IsFeatured = request.IsFeatured;
+        product.StockQuantity = request.StockQuantity;
         product.PreparationTimeMinutes = request.PreparationTimeMinutes;
     }
 

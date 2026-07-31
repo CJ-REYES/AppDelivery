@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using Backend.Authorization;
 using Backend.Data;
 using Backend.Infrastructure.Auth;
@@ -8,6 +9,8 @@ using Backend.Models;
 using Backend.Services.Addresses;
 using Backend.Services.Auth;
 using Backend.Services.Catalog;
+using Backend.Services.Orders;
+using Backend.Services.Payments;
 using Backend.Services.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -114,7 +117,13 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        )
+    );
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>
@@ -150,6 +159,8 @@ builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IMerchantCatalogService, MerchantCatalogService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IPaymentMethodService, PaymentMethodService>();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();

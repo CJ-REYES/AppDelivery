@@ -26,6 +26,7 @@ public sealed record ProductResponse(
     string? ImageUrl,
     bool IsAvailable,
     bool IsFeatured,
+    int StockQuantity,
     int PreparationTimeMinutes,
     DateTime CreatedAt,
     DateTime UpdatedAt

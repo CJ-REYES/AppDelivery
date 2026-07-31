@@ -26,6 +26,9 @@ public sealed class SaveProductRequest
 
     public bool IsFeatured { get; init; }
 
+    [Range(0, 999999)]
+    public int StockQuantity { get; init; } = 100;
+
     [Range(0, 240)]
     public int PreparationTimeMinutes { get; init; }
 }

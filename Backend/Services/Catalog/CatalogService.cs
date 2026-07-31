@@ -57,6 +57,7 @@ public sealed class CatalogService(AppDbContext database) : ICatalogService
                 || store.StoreCategory.Name.ToLower().Contains(searchTerm)
                 || store.Products.Any(product =>
                     product.IsAvailable
+                    && product.StockQuantity > 0
                     && product.ProductCategory.IsActive
                     && (
                         product.Name.ToLower().Contains(searchTerm)
@@ -129,6 +130,7 @@ public sealed class CatalogService(AppDbContext database) : ICatalogService
             .Where(product =>
                 product.StoreId == storeId
                 && product.IsAvailable
+                && product.StockQuantity > 0
                 && product.ProductCategory.IsActive
             );
 
