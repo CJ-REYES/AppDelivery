@@ -14,11 +14,12 @@ import type {
   UserProfile,
 } from '../../types/account'
 
-type Section = 'profile' | 'addresses' | 'security'
+type Section = 'profile' | 'addresses' | 'roles' | 'security'
 
 const sections = [
   ['person', 'Datos personales', 'profile'],
   ['location_on', 'Direcciones', 'addresses'],
+  ['switch_account', 'Mis perfiles', 'roles'],
   ['security', 'Seguridad', 'security'],
 ] as const
 
@@ -256,19 +257,6 @@ export function ProfilePage() {
               </button>
             ))}
           </nav>
-          <Link
-            className="mt-4 flex w-full items-center gap-3 rounded-xl bg-accent/10 px-3 py-3 text-sm font-bold text-accent"
-            to={
-              user?.roles.includes('Merchant')
-                ? '/mi-comercio'
-                : '/registro-comercio'
-            }
-          >
-            <Icon className="text-[20px]" name="storefront" />
-            {user?.roles.includes('Merchant')
-              ? 'Administrar comercio'
-              : 'Registrar comercio'}
-          </Link>
           <button
             className="mt-4 flex w-full items-center gap-3 border-t border-line px-3 pt-5 text-sm font-bold text-danger"
             onClick={endSession}
@@ -517,6 +505,122 @@ export function ProfilePage() {
                 <Icon name="password" />
                 Cambiar contraseña
               </Link>
+            </section>
+          ) : null}
+
+          {!loading && section === 'roles' ? (
+            <section className="card p-5 md:p-7">
+              <p className="eyebrow">Una cuenta, tres áreas</p>
+              <h1 className="mt-2 font-display text-3xl font-semibold text-primary md:text-4xl">
+                Mis perfiles
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
+                Tu cuenta siempre conserva el acceso como cliente. Activa
+                también repartidor, comercio o ambos y cambia de área sin
+                cerrar sesión.
+              </p>
+
+              <div className="mt-7 grid gap-4 lg:grid-cols-3">
+                <article className="rounded-2xl border border-primary bg-primary p-5 text-white">
+                  <span className="grid size-12 place-items-center rounded-2xl bg-white/12">
+                    <Icon name="home" />
+                  </span>
+                  <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-white/55">
+                    Perfil principal
+                  </p>
+                  <h2 className="mt-1 font-display text-2xl font-semibold">
+                    Cliente
+                  </h2>
+                  <p className="mt-2 min-h-12 text-sm leading-6 text-white/70">
+                    Explora comercios, compra productos y sigue tus pedidos.
+                  </p>
+                  <Link
+                    className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-primary"
+                    to="/inicio"
+                  >
+                    Ir al inicio
+                    <Icon className="text-[18px]" name="arrow_forward" />
+                  </Link>
+                </article>
+
+                <article className="rounded-2xl border border-line bg-white p-5">
+                  <span className="grid size-12 place-items-center rounded-2xl bg-accent/10 text-accent">
+                    <Icon name="delivery_dining" />
+                  </span>
+                  <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-accent">
+                    {user?.roles.includes('Driver')
+                      ? 'Perfil activo'
+                      : 'Perfil disponible'}
+                  </p>
+                  <h2 className="mt-1 font-display text-2xl font-semibold text-primary">
+                    Repartidor
+                  </h2>
+                  <p className="mt-2 min-h-12 text-sm leading-6 text-muted">
+                    Recibe entregas, comparte tu ubicación y consulta tu
+                    historial.
+                  </p>
+                  <Link
+                    className="primary-button mt-5 w-full"
+                    to={
+                      user?.roles.includes('Driver')
+                        ? '/repartidor'
+                        : '/registro-repartidor'
+                    }
+                  >
+                    {user?.roles.includes('Driver')
+                      ? 'Abrir repartidor'
+                      : 'Registrarme como repartidor'}
+                    <Icon className="text-[18px]" name="arrow_forward" />
+                  </Link>
+                  {user?.roles.includes('Driver') ? (
+                    <Link
+                      className="mt-3 flex justify-center text-xs font-bold text-primary"
+                      to="/repartidor/perfil"
+                    >
+                      Editar perfil de repartidor
+                    </Link>
+                  ) : null}
+                </article>
+
+                <article className="rounded-2xl border border-line bg-white p-5">
+                  <span className="grid size-12 place-items-center rounded-2xl bg-panel text-primary">
+                    <Icon name="storefront" />
+                  </span>
+                  <p className="mt-5 text-xs font-bold uppercase tracking-[0.16em] text-success">
+                    {user?.roles.includes('Merchant')
+                      ? 'Perfil activo'
+                      : 'Perfil disponible'}
+                  </p>
+                  <h2 className="mt-1 font-display text-2xl font-semibold text-primary">
+                    Comercio
+                  </h2>
+                  <p className="mt-2 min-h-12 text-sm leading-6 text-muted">
+                    Publica productos y administra la información de tu
+                    negocio.
+                  </p>
+                  <Link
+                    className="secondary-button mt-5 w-full"
+                    to={
+                      user?.roles.includes('Merchant')
+                        ? '/mi-comercio'
+                        : '/registro-comercio'
+                    }
+                  >
+                    {user?.roles.includes('Merchant')
+                      ? 'Abrir comercio'
+                      : 'Registrar comercio'}
+                    <Icon className="text-[18px]" name="arrow_forward" />
+                  </Link>
+                  {user?.roles.includes('Merchant') ? (
+                    <Link
+                      className="mt-3 flex justify-center text-xs font-bold text-primary"
+                      to="/mi-comercio/perfil"
+                    >
+                      Editar perfil del comercio
+                    </Link>
+                  ) : null}
+                </article>
+              </div>
             </section>
           ) : null}
         </div>

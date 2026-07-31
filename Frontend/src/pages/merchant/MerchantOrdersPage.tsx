@@ -96,7 +96,7 @@ export function MerchantOrdersPage() {
       setSummary(await merchantOrderApi.getSummary(accessToken))
       setMessage(
         status === 'ReadyForPickup'
-          ? 'El pedido quedó listo para continuar con la entrega.'
+          ? 'El pedido ya aparece a los repartidores disponibles.'
           : 'Estado actualizado correctamente.',
       )
     } catch (reason) {
@@ -150,8 +150,8 @@ export function MerchantOrdersPage() {
           Pedidos vendidos
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-          Confirma, prepara y deja listos los pedidos recibidos por el
-          comercio.
+          Confirma, prepara y libera pedidos para que un repartidor pueda
+          aceptarlos.
         </p>
 
         <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

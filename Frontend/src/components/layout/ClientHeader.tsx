@@ -1,12 +1,12 @@
 import { Link, NavLink } from 'react-router-dom'
 import { Brand } from '../common/Brand'
 import { Icon } from '../common/Icon'
+import { AccountAreaMenu } from './AccountAreaMenu'
 
 const clientLinks = [
   ['Explorar', '/inicio'],
   ['Ofertas', '/buscar'],
   ['Mis pedidos', '/pedidos'],
-  ['Vender', '/unete'],
 ] as const
 
 export function ClientHeader({ cartCount = 2 }: { cartCount?: number }) {
@@ -40,6 +40,7 @@ export function ClientHeader({ cartCount = 2 }: { cartCount?: number }) {
           <Link aria-label="Notificaciones" className="icon-button hidden sm:inline-flex" to="/pedidos">
             <Icon name="notifications" />
           </Link>
+          <AccountAreaMenu currentArea="client" />
           <Link aria-label="Perfil" className="icon-button" to="/perfil">
             <Icon name="person" />
           </Link>

@@ -1,10 +1,12 @@
-import { type FormEvent } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import type {
   SaveStoreInput,
   StoreCategory,
   StoreDetail,
 } from '../../types/catalog'
+import type { GeoPoint } from '../../types/routing'
 import { Icon } from '../common/Icon'
+import { LocationPicker } from '../maps/LocationPicker'
 
 type StoreFormProps = {
   categories: StoreCategory[]
@@ -26,11 +28,35 @@ export function StoreForm({
   submitLabel,
   onSubmit,
 }: StoreFormProps) {
+  const [location, setLocation] = useState<GeoPoint | null>(
+    initial?.latitude != null && initial.longitude != null
+      ? {
+          latitude: initial.latitude,
+          longitude: initial.longitude,
+        }
+      : null,
+  )
+  const [locationError, setLocationError] = useState('')
+
+  useEffect(() => {
+    if (initial?.latitude != null && initial.longitude != null) {
+      setLocation({
+        latitude: initial.latitude,
+        longitude: initial.longitude,
+      })
+    }
+  }, [initial])
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
-    const latitude = optionalValue(form.get('latitude'))
-    const longitude = optionalValue(form.get('longitude'))
+
+    if (!location) {
+      setLocationError(
+        'Selecciona en el mapa el punto exacto del comercio.',
+      )
+      return
+    }
 
     await onSubmit({
       storeCategoryId: Number(form.get('storeCategoryId')),
@@ -47,8 +73,8 @@ export function StoreForm({
       city: String(form.get('city') ?? '').trim(),
       state: String(form.get('state') ?? '').trim(),
       postalCode: String(form.get('postalCode') ?? '').trim(),
-      latitude: latitude ? Number(latitude) : null,
-      longitude: longitude ? Number(longitude) : null,
+      latitude: location.latitude,
+      longitude: location.longitude,
       deliveryFee: Number(form.get('deliveryFee')),
       minimumOrderAmount: Number(form.get('minimumOrderAmount')),
       estimatedDeliveryMinutesMin: Number(
@@ -253,9 +279,10 @@ export function StoreForm({
             </span>
             <input
               className="field"
-              defaultValue={initial?.city ?? 'Mérida'}
+              defaultValue={initial?.city ?? ''}
               maxLength={100}
               name="city"
+              placeholder="Ciudad del comercio"
               required
             />
           </label>
@@ -265,9 +292,10 @@ export function StoreForm({
             </span>
             <input
               className="field"
-              defaultValue={initial?.state ?? 'Yucatán'}
+              defaultValue={initial?.state ?? ''}
               maxLength={100}
               name="state"
+              placeholder="Estado del comercio"
               required
             />
           </label>
@@ -284,35 +312,26 @@ export function StoreForm({
               required
             />
           </label>
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-primary">
-              Latitud opcional
-            </span>
-            <input
-              className="field"
-              defaultValue={initial?.latitude ?? ''}
-              max={90}
-              min={-90}
-              name="latitude"
-              step="any"
-              type="number"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-2 block text-sm font-semibold text-primary">
-              Longitud opcional
-            </span>
-            <input
-              className="field"
-              defaultValue={initial?.longitude ?? ''}
-              max={180}
-              min={-180}
-              name="longitude"
-              step="any"
-              type="number"
-            />
-          </label>
         </div>
+        <div className="mt-6">
+          <LocationPicker
+            description="Marca la entrada donde el repartidor recogerá los pedidos."
+            onChange={(point) => {
+              setLocation(point)
+              setLocationError('')
+            }}
+            title="Punto exacto del restaurante"
+            value={location}
+          />
+        </div>
+        {locationError ? (
+          <p
+            className="mt-3 rounded-xl border border-danger/20 bg-danger/5 p-3 text-sm text-danger"
+            role="alert"
+          >
+            {locationError}
+          </p>
+        ) : null}
       </section>
 
       <section className="card p-6">
@@ -382,7 +401,9 @@ export function StoreForm({
       <div className="flex justify-end">
         <button
           className="primary-button min-w-52"
-          disabled={submitting || categories.length === 0}
+          disabled={
+            submitting || categories.length === 0 || location === null
+          }
           type="submit"
         >
           {submitting ? (

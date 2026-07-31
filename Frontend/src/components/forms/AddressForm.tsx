@@ -1,5 +1,7 @@
-import { type FormEvent } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import type { Address } from '../../context/AppStateContext'
+import type { GeoPoint } from '../../types/routing'
+import { LocationPicker } from '../maps/LocationPicker'
 
 type AddressFormProps = {
   initial?: Address
@@ -8,8 +10,27 @@ type AddressFormProps = {
 }
 
 export function AddressForm({ initial, onCancel, onSave }: AddressFormProps) {
+  const [location, setLocation] = useState<GeoPoint | null>(
+    initial?.latitude != null && initial.longitude != null
+      ? {
+          latitude: initial.latitude,
+          longitude: initial.longitude,
+        }
+      : null,
+  )
+
+  useEffect(() => {
+    if (initial?.latitude != null && initial.longitude != null) {
+      setLocation({
+        latitude: initial.latitude,
+        longitude: initial.longitude,
+      })
+    }
+  }, [initial])
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!location) return
     const data = new FormData(event.currentTarget)
     const label = String(data.get('label')).trim()
 
@@ -23,8 +44,8 @@ export function AddressForm({ initial, onCancel, onSave }: AddressFormProps) {
       receiver: String(data.get('receiver')).trim(),
       phone: String(data.get('phone')).trim(),
       references: String(data.get('references')).trim(),
-      latitude: initial?.latitude ?? null,
-      longitude: initial?.longitude ?? null,
+      latitude: location.latitude,
+      longitude: location.longitude,
       isPrimary: data.get('isPrimary') === 'on',
     })
   }
@@ -63,8 +84,9 @@ export function AddressForm({ initial, onCancel, onSave }: AddressFormProps) {
           <span className="mb-2 block text-sm font-bold text-primary">Ciudad y estado</span>
           <input
             className="field"
-            defaultValue={initial?.city ?? 'Mérida, Yucatán'}
+            defaultValue={initial?.city ?? ''}
             name="city"
+            placeholder="Tu ciudad y estado"
             required
           />
         </label>
@@ -95,9 +117,17 @@ export function AddressForm({ initial, onCancel, onSave }: AddressFormProps) {
           Usar como dirección principal
         </label>
       </div>
+      <div className="mt-5">
+        <LocationPicker
+          description="Marca la entrada donde quieres recibir el pedido."
+          onChange={setLocation}
+          title="Punto exacto de entrega"
+          value={location}
+        />
+      </div>
       <div className="mt-7 flex justify-end gap-3">
         <button className="ghost-button" onClick={onCancel} type="button">Cancelar</button>
-        <button className="primary-button" type="submit">Guardar dirección</button>
+        <button className="primary-button" disabled={!location} type="submit">Guardar dirección</button>
       </div>
     </form>
   )

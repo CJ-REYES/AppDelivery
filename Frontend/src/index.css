@@ -156,6 +156,42 @@
     repeating-linear-gradient(35deg, transparent 0 32px, rgba(0, 41, 32, 0.08) 33px 35px);
 }
 
+.leaflet-container {
+  z-index: 0;
+  background: var(--color-panel);
+  font-family: var(--font-body);
+}
+
+.map-marker {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 4px solid #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgb(0 41 32 / 24%);
+}
+
+.map-marker .material-symbols-outlined {
+  font-size: 22px;
+}
+
+.map-marker-location,
+.map-marker-driver {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+.map-marker-store {
+  background: #ffffff;
+  color: var(--color-primary);
+}
+
+.map-marker-home {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -25,24 +25,22 @@ export function LoginPage() {
     const form = new FormData(event.currentTarget)
 
     try {
-      const user = registration
-        ? await register({
+      if (registration) {
+        await register({
             firstName: String(form.get('firstName') ?? ''),
             lastName: String(form.get('lastName') ?? ''),
             email: String(form.get('email') ?? ''),
             password: String(form.get('password') ?? ''),
             phoneNumber: String(form.get('phoneNumber') ?? '') || null,
           })
-        : await login({
+      } else {
+        await login({
             email: String(form.get('email') ?? ''),
             password: String(form.get('password') ?? ''),
           })
+      }
 
-      navigate(
-        returnTo ??
-          (user.roles.includes('Merchant') ? '/mi-comercio' : '/inicio'),
-        { replace: true },
-      )
+      navigate(returnTo ?? '/inicio', { replace: true })
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -91,7 +89,7 @@ export function LoginPage() {
           </h1>
           <p className="mt-2 text-sm text-muted">
             {registration
-              ? 'Después podrás registrar tu comercio con la misma cuenta.'
+              ? 'Después podrás activar los perfiles de repartidor y comercio con la misma cuenta.'
               : 'Entra para continuar a AppDelivery.'}
           </p>
 

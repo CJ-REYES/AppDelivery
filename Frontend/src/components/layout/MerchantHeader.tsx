@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { Brand } from '../common/Brand'
 import { Icon } from '../common/Icon'
+import { AccountAreaMenu } from './AccountAreaMenu'
 
 const links = [
   ['Panel', '/mi-comercio'],
@@ -44,6 +45,7 @@ export function MerchantHeader() {
           </nav>
         </div>
         <div className="flex items-center gap-3">
+          <AccountAreaMenu currentArea="merchant" />
           <span className="hidden text-right sm:block">
             <strong className="block text-sm text-primary">
               {user?.firstName} {user?.lastName}
