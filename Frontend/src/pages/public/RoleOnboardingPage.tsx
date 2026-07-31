@@ -4,7 +4,6 @@ import { ClientHeader } from '../../components/layout/ClientHeader'
 import { MobileNav } from '../../components/layout/MobileNav'
 import { SiteFooter } from '../../components/layout/SiteFooter'
 import { useAuth } from '../../context/AuthContext'
-import { useAppState } from '../../context/AppStateContext'
 
 const benefits = {
   merchant: ['Publica tu menú y fotografías', 'Gestiona pedidos y disponibilidad', 'Diseña el perfil de tu restaurante'],
@@ -12,9 +11,9 @@ const benefits = {
 }
 
 export function RoleOnboardingPage() {
-  const { driver } = useAppState()
   const { user } = useAuth()
   const merchantRegistered = user?.roles.includes('Merchant') ?? false
+  const driverRegistered = user?.roles.includes('Driver') ?? false
 
   return (
     <div className="min-h-screen bg-background pb-20 pt-20 md:pb-0">
@@ -90,9 +89,13 @@ export function RoleOnboardingPage() {
               </ul>
               <Link
                 className="secondary-button mt-7 w-full"
-                to={driver.registered ? '/repartidor' : '/registro-repartidor'}
+                to={
+                  driverRegistered
+                    ? '/repartidor'
+                    : '/registro-repartidor'
+                }
               >
-                {driver.registered ? 'Ir a mis entregas' : 'Quiero repartir'}
+                {driverRegistered ? 'Ir a mis entregas' : 'Quiero repartir'}
                 <Icon className="text-[18px]" name="arrow_forward" />
               </Link>
             </div>

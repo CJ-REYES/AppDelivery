@@ -239,14 +239,13 @@ export function OrdersPage() {
                         ${order.total.toFixed(2)} MXN
                       </strong>
                       {isActive ? (
-                        <button
+                        <Link
                           className="secondary-button !min-h-10 !px-4"
-                          onClick={() => setExpanded(isOpen ? null : order.id)}
-                          type="button"
+                          to={`/seguimiento/${order.id}`}
                         >
-                          <Icon name="receipt_long" />
-                          Ver estado
-                        </button>
+                          <Icon name="route" />
+                          Seguir
+                        </Link>
                       ) : (
                         <Link
                           className="ghost-button !min-h-10 !px-4"

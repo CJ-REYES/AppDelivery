@@ -165,11 +165,46 @@ totales enviados por React.
 
 Solo se conservan metadatos enmascarados de tarjeta. La API no guarda el
 número completo ni el CVV. Esta entrega registra el pedido y su referencia de
-pago, pero no realiza un cobro bancario real.
+pago, pero no sustituye una futura integración con una pasarela que realice el
+cobro.
 
-Los estados administrados en esta etapa son `Pending`, `Confirmed`,
-`Preparing`, `ReadyForPickup` y `Cancelled`. Cada transición queda registrada
-en `order_status_history`; reparto y entrega se integran en la etapa siguiente.
+Los estados válidos son `Pending`, `Confirmed`, `Preparing`,
+`ReadyForPickup`, `OutForDelivery`, `Delivered` y `Cancelled`. Cada transición
+queda en `order_status_history`.
 
-La cobertura de cada acción de los controladores y su consumidor React se
-documenta en `docs/05-trazabilidad.md`.
+## Repartidores, rutas y seguimiento
+
+El alta de repartidor asigna el rol `Driver`. Después de renovar el access
+token, el repartidor puede compartir su ubicación, cambiar su disponibilidad,
+consultar entregas recomendadas, aceptar una y avanzar sus estados.
+
+| Método | Ruta | Función |
+|---|---|---|
+| `POST` | `/api/drivers` | Registrar el perfil de repartidor |
+| `GET/PUT` | `/api/drivers/me` | Consultar o actualizar el perfil |
+| `PATCH` | `/api/drivers/me/availability` | Cambiar disponibilidad |
+| `PUT` | `/api/drivers/me/location` | Actualizar la posición GPS |
+| `GET` | `/api/drivers/me/summary` | Consultar desempeño y ganancias |
+| `GET` | `/api/delivery-assignments/available` | Listar entregas por eficiencia |
+| `POST` | `/api/delivery-assignments/orders/{id}/accept` | Aceptar entrega |
+| `POST` | `/api/delivery-assignments/orders/{id}/reject` | Rechazarla para el repartidor actual |
+| `GET` | `/api/delivery-assignments/active` | Consultar la entrega activa |
+| `PATCH` | `/api/delivery-assignments/{id}/status` | Avanzar el estado |
+| `GET` | `/api/delivery-assignments/history` | Consultar historial |
+| `POST` | `/api/routes/best` | Calcular ruta origen-parada-destino |
+| `GET` | `/api/tracking/orders/{id}` | Seguimiento autorizado del pedido |
+| `WS` | `/hubs/tracking` | Eventos SignalR protegidos por pedido |
+
+El proveedor predeterminado es OSRM sobre datos de OpenStreetMap. Se configura
+en `Routing` dentro de `appsettings.json`. Si no responde, la API devuelve una
+estimación Haversine marcada con `isEstimated: true`, evitando que el flujo
+quede bloqueado.
+
+El cliente se suscribe al grupo SignalR del pedido después de autenticarse.
+Los cambios de asignación, estado y ubicación del repartidor disparan una
+actualización inmediata; la API REST sigue siendo la fuente de verdad.
+
+Las coordenadas ya pertenecían al esquema inicial. La migración de esta
+entrega se limita al inventario de productos y al historial persistido de
+estados. Los formularios exigen un punto de mapa para que las nuevas
+direcciones y comercios siempre sean utilizables en el cálculo de rutas.

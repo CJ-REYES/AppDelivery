@@ -42,9 +42,11 @@ public sealed class SaveAddressRequest
     [StringLength(500)]
     public string? References { get; init; }
 
+    [Required(ErrorMessage = "Selecciona la ubicación en el mapa.")]
     [Range(typeof(decimal), "-90", "90")]
     public decimal? Latitude { get; init; }
 
+    [Required(ErrorMessage = "Selecciona la ubicación en el mapa.")]
     [Range(typeof(decimal), "-180", "180")]
     public decimal? Longitude { get; init; }
 

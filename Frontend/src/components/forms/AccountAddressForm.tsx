@@ -1,8 +1,10 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import type {
   Address,
   SaveAddressInput,
 } from '../../types/account'
+import type { GeoPoint } from '../../types/routing'
+import { LocationPicker } from '../maps/LocationPicker'
 
 type AccountAddressFormProps = {
   initial?: Address
@@ -15,11 +17,6 @@ function optionalText(value: FormDataEntryValue | null) {
   return normalized || null
 }
 
-function optionalNumber(value: FormDataEntryValue | null) {
-  const normalized = String(value ?? '').trim()
-  return normalized ? Number(normalized) : null
-}
-
 export function AccountAddressForm({
   initial,
   onCancel,
@@ -27,6 +24,23 @@ export function AccountAddressForm({
 }: AccountAddressFormProps) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [location, setLocation] = useState<GeoPoint | null>(
+    initial?.latitude != null && initial.longitude != null
+      ? {
+          latitude: initial.latitude,
+          longitude: initial.longitude,
+        }
+      : null,
+  )
+
+  useEffect(() => {
+    if (initial?.latitude != null && initial.longitude != null) {
+      setLocation({
+        latitude: initial.latitude,
+        longitude: initial.longitude,
+      })
+    }
+  }, [initial])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -35,6 +49,12 @@ export function AccountAddressForm({
     setError('')
 
     try {
+      if (!location) {
+        throw new Error(
+          'Selecciona en el mapa el punto exacto de entrega.',
+        )
+      }
+
       await onSave({
         label: String(data.get('label') ?? '').trim(),
         street: String(data.get('street') ?? '').trim(),
@@ -48,8 +68,8 @@ export function AccountAddressForm({
         postalCode: String(data.get('postalCode') ?? '').trim(),
         country: String(data.get('country') ?? '').trim(),
         references: optionalText(data.get('references')),
-        latitude: optionalNumber(data.get('latitude')),
-        longitude: optionalNumber(data.get('longitude')),
+        latitude: location.latitude,
+        longitude: location.longitude,
         isDefault: data.get('isDefault') === 'on',
       })
     } catch (reason) {
@@ -145,9 +165,10 @@ export function AccountAddressForm({
           </span>
           <input
             className="field"
-            defaultValue={initial?.city ?? 'Mérida'}
+            defaultValue={initial?.city ?? ''}
             minLength={2}
             name="city"
+            placeholder="Tu ciudad"
             required
           />
         </label>
@@ -157,9 +178,10 @@ export function AccountAddressForm({
           </span>
           <input
             className="field"
-            defaultValue={initial?.state ?? 'Yucatán'}
+            defaultValue={initial?.state ?? ''}
             minLength={2}
             name="state"
+            placeholder="Tu estado"
             required
           />
         </label>
@@ -173,34 +195,6 @@ export function AccountAddressForm({
             minLength={2}
             name="country"
             required
-          />
-        </label>
-        <label>
-          <span className="mb-2 block text-sm font-bold text-primary">
-            Latitud (opcional)
-          </span>
-          <input
-            className="field"
-            defaultValue={initial?.latitude ?? ''}
-            max="90"
-            min="-90"
-            name="latitude"
-            step="any"
-            type="number"
-          />
-        </label>
-        <label>
-          <span className="mb-2 block text-sm font-bold text-primary">
-            Longitud (opcional)
-          </span>
-          <input
-            className="field"
-            defaultValue={initial?.longitude ?? ''}
-            max="180"
-            min="-180"
-            name="longitude"
-            step="any"
-            type="number"
           />
         </label>
         <label className="sm:col-span-2">
@@ -225,6 +219,17 @@ export function AccountAddressForm({
           Usar como dirección principal
         </label>
       </div>
+      <div className="mt-5">
+        <LocationPicker
+          description="Marca la entrada donde deseas recibir al repartidor."
+          onChange={(point) => {
+            setLocation(point)
+            setError('')
+          }}
+          title="Punto exacto de entrega"
+          value={location}
+        />
+      </div>
       {error ? (
         <div
           className="mt-5 rounded-xl border border-danger/20 bg-danger/5 p-3 text-sm text-danger"
@@ -236,7 +241,7 @@ export function AccountAddressForm({
       <div className="mt-7 flex justify-end gap-3">
         <button
           className="ghost-button"
-          disabled={submitting}
+          disabled={submitting || location === null}
           onClick={onCancel}
           type="button"
         >

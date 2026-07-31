@@ -151,7 +151,7 @@ public sealed class OrderWorkflowTests
     }
 
     [Fact]
-    public async Task Order_moves_through_merchant_statuses_and_updates_summary()
+    public async Task Order_moves_through_merchant_driver_and_all_histories()
     {
         using var merchant = _factory.CreateSecureClient();
         var catalog = await CreateMerchantCatalogAsync(
@@ -199,18 +199,84 @@ public sealed class OrderWorkflowTests
             Assert.Equal(HttpStatusCode.OK, transition.StatusCode);
         }
 
+        using var driver = _factory.CreateSecureClient();
+        await RegisterAndAuthorizeAsync(driver, "flow-driver");
+        var registerDriver = await driver.PostAsJsonAsync(
+            "/api/drivers",
+            ValidDriver()
+        );
+        Assert.Equal(HttpStatusCode.Created, registerDriver.StatusCode);
+        await RefreshAndAuthorizeAsync(driver, "Driver");
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (
+                await driver.PutAsJsonAsync(
+                    "/api/drivers/me/location",
+                    new
+                    {
+                        latitude = 20.9700m,
+                        longitude = -89.6100m
+                    }
+                )
+            ).StatusCode
+        );
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (
+                await driver.PatchAsJsonAsync(
+                    "/api/drivers/me/availability",
+                    new { status = "Available" }
+                )
+            ).StatusCode
+        );
+
+        var available = await driver.GetAsync(
+            "/api/delivery-assignments/available"
+        );
+        Assert.Equal(HttpStatusCode.OK, available.StatusCode);
+        Assert.Contains(
+            (await ReadJsonAsync(available)).EnumerateArray(),
+            item => item.GetProperty("orderId").GetGuid() == orderId
+        );
+
+        var accept = await driver.PostAsync(
+            $"/api/delivery-assignments/orders/{orderId}/accept",
+            null
+        );
+        Assert.Equal(HttpStatusCode.OK, accept.StatusCode);
+        var assignmentId = (await ReadJsonAsync(accept))
+            .GetProperty("assignmentId")
+            .GetGuid();
+
+        foreach (
+            var status in new[]
+            {
+                "HeadingToStore",
+                "PickedUp",
+                "OutForDelivery",
+                "Delivered"
+            }
+        )
+        {
+            var transition = await driver.PatchAsJsonAsync(
+                $"/api/delivery-assignments/{assignmentId}/status",
+                new { status, driverNotes = (string?)null }
+            );
+            Assert.Equal(HttpStatusCode.OK, transition.StatusCode);
+        }
+
         var customerOrders = await customer.GetAsync("/api/orders");
-        var readyOrder = Assert.Single(
+        var deliveredOrder = Assert.Single(
             (await ReadJsonAsync(customerOrders)).EnumerateArray(),
             order => order.GetProperty("id").GetGuid() == orderId
         );
         Assert.Equal(
-            "ReadyForPickup",
-            readyOrder.GetProperty("status").GetString()
+            "Delivered",
+            deliveredOrder.GetProperty("status").GetString()
         );
         Assert.Equal(
-            4,
-            readyOrder.GetProperty("statusHistory").GetArrayLength()
+            6,
+            deliveredOrder.GetProperty("statusHistory").GetArrayLength()
         );
 
         var merchantOrders = await merchant.GetAsync(
@@ -220,20 +286,35 @@ public sealed class OrderWorkflowTests
             (await ReadJsonAsync(merchantOrders)).EnumerateArray(),
             order =>
                 order.GetProperty("id").GetGuid() == orderId
-                && order.GetProperty("status").GetString() == "ReadyForPickup"
+                && order.GetProperty("status").GetString() == "Delivered"
         );
         var sales = await merchant.GetAsync(
             "/api/merchant/orders/summary"
         );
         Assert.Equal(HttpStatusCode.OK, sales.StatusCode);
-        var summary = await ReadJsonAsync(sales);
-        Assert.Equal(
-            1,
-            summary.GetProperty("activeOrders").GetInt32()
+        Assert.True(
+            (await ReadJsonAsync(sales))
+                .GetProperty("grossSales")
+                .GetDecimal() > 0m
         );
+
+        var driverHistory = await driver.GetAsync(
+            "/api/delivery-assignments/history"
+        );
+        Assert.Contains(
+            (await ReadJsonAsync(driverHistory)).EnumerateArray(),
+            item => item.GetProperty("orderId").GetGuid() == orderId
+        );
+
+        var tracking = await customer.GetAsync(
+            $"/api/tracking/orders/{orderId}"
+        );
+        Assert.Equal(HttpStatusCode.OK, tracking.StatusCode);
         Assert.Equal(
-            0m,
-            summary.GetProperty("grossSales").GetDecimal()
+            "Delivered",
+            (await ReadJsonAsync(tracking))
+                .GetProperty("orderStatus")
+                .GetString()
         );
     }
 
@@ -380,6 +461,21 @@ public sealed class OrderWorkflowTests
         estimatedDeliveryMinutesMin = 20,
         estimatedDeliveryMinutesMax = 35,
         isOpen = true
+    };
+
+    private static object ValidDriver() => new
+    {
+        vehicleType = "Motorcycle",
+        vehicleBrand = "Honda",
+        vehicleModel = "Cargo",
+        vehicleColor = "Rojo",
+        vehiclePlate = "YUC123A",
+        driverLicenseNumber = "LIC-ORDER-2026",
+        profilePhotoUrl = "https://example.com/driver.jpg",
+        identificationDocumentUrl =
+            "https://example.com/identification.pdf",
+        driverLicenseDocumentUrl =
+            "https://example.com/license.pdf"
     };
 
     private static void SetAccessToken(HttpClient client, string token)

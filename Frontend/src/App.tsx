@@ -17,6 +17,11 @@ import { ProfilePage } from './pages/client/ProfilePage'
 import { SearchPage } from './pages/client/SearchPage'
 import { StorePage } from './pages/client/StorePage'
 import { TrackingPage } from './pages/client/TrackingPage'
+import { ActiveDeliveryPage } from './pages/driver/ActiveDeliveryPage'
+import { DriverDashboardPage } from './pages/driver/DriverDashboardPage'
+import { DriverHistoryPage } from './pages/driver/DriverHistoryPage'
+import { DriverProfilePage } from './pages/driver/DriverProfilePage'
+import { DriverRegistrationPage } from './pages/driver/DriverRegistrationPage'
 import { MerchantDashboardPage } from './pages/merchant/MerchantDashboardPage'
 import { MerchantOrdersPage } from './pages/merchant/MerchantOrdersPage'
 import { MerchantProductsPage } from './pages/merchant/MerchantProductsPage'
@@ -89,7 +94,16 @@ function RequireAuth({
   }
 
   if (role && !user?.roles.includes(role)) {
-    return <Navigate replace to="/registro-comercio" />
+    return (
+      <Navigate
+        replace
+        to={
+          role === 'Driver'
+            ? '/registro-repartidor'
+            : '/registro-comercio'
+        }
+      />
+    )
   }
 
   return children
@@ -129,7 +143,58 @@ function AppRoutes() {
           }
           path="/pedidos"
         />
-        <Route element={<TrackingPage />} path="/seguimiento" />
+        <Route
+          element={
+            <RequireAuth>
+              <TrackingPage />
+            </RequireAuth>
+          }
+          path="/seguimiento"
+        />
+        <Route
+          element={
+            <RequireAuth>
+              <TrackingPage />
+            </RequireAuth>
+          }
+          path="/seguimiento/:orderId"
+        />
+        <Route
+          element={<DriverRegistrationPage />}
+          path="/registro-repartidor"
+        />
+        <Route
+          element={
+            <RequireAuth role="Driver">
+              <DriverDashboardPage />
+            </RequireAuth>
+          }
+          path="/repartidor"
+        />
+        <Route
+          element={
+            <RequireAuth role="Driver">
+              <ActiveDeliveryPage />
+            </RequireAuth>
+          }
+          path="/repartidor/entrega-activa"
+        />
+        <Route
+          element={
+            <RequireAuth role="Driver">
+              <DriverHistoryPage />
+            </RequireAuth>
+          }
+          path="/repartidor/historial"
+        />
+        <Route
+          element={
+            <RequireAuth role="Driver">
+              <DriverProfilePage />
+            </RequireAuth>
+          }
+          path="/repartidor/perfil"
+        />
 
         <Route
           element={

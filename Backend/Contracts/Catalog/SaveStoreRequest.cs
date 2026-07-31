@@ -59,9 +59,11 @@ public sealed class SaveStoreRequest
     [StringLength(10, MinimumLength = 4)]
     public string PostalCode { get; init; } = string.Empty;
 
+    [Required(ErrorMessage = "Selecciona la ubicación del comercio en el mapa.")]
     [Range(typeof(decimal), "-90", "90")]
     public decimal? Latitude { get; init; }
 
+    [Required(ErrorMessage = "Selecciona la ubicación del comercio en el mapa.")]
     [Range(typeof(decimal), "-180", "180")]
     public decimal? Longitude { get; init; }
 
