@@ -1,6 +1,285 @@
 @Backend_HostAddress = http://localhost:5258
+@AccessToken = REEMPLAZA_CON_EL_ACCESS_TOKEN
+@AddressId = REEMPLAZA_CON_EL_ID_DE_DIRECCION
+@StoreId = REEMPLAZA_CON_EL_ID_DEL_COMERCIO
+@ProductCategoryId = REEMPLAZA_CON_EL_ID_DE_CATEGORIA
+@ProductId = REEMPLAZA_CON_EL_ID_DEL_PRODUCTO
+@PaymentMethodId = REEMPLAZA_CON_EL_ID_DEL_METODO_DE_PAGO
+@OrderId = REEMPLAZA_CON_EL_ID_DEL_PEDIDO
 
-GET {{Backend_HostAddress}}/weatherforecast/
-Accept: application/json
+### Registrar cliente
+POST {{Backend_HostAddress}}/api/auth/register
+Content-Type: application/json
 
-###
+{
+  "firstName": "Carlos",
+  "lastName": "Reyes",
+  "email": "carlos@example.com",
+  "password": "AppDelivery2026!",
+  "phoneNumber": "9991234567"
+}
+
+### Iniciar sesión
+POST {{Backend_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "carlos@example.com",
+  "password": "AppDelivery2026!"
+}
+
+### Consultar sesión
+GET {{Backend_HostAddress}}/api/auth/me
+Authorization: Bearer {{AccessToken}}
+
+### Renovar access token (usa la cookie HttpOnly)
+POST {{Backend_HostAddress}}/api/auth/refresh
+
+### Actualizar perfil
+PUT {{Backend_HostAddress}}/api/users/me
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "firstName": "Carlos",
+  "lastName": "Reyes",
+  "phoneNumber": "9991234567"
+}
+
+### Crear dirección
+POST {{Backend_HostAddress}}/api/addresses
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "label": "Casa",
+  "street": "Calle 60",
+  "exteriorNumber": "425",
+  "interiorNumber": null,
+  "neighborhood": "Centro",
+  "city": "Mérida",
+  "state": "Yucatán",
+  "postalCode": "97000",
+  "country": "México",
+  "references": "Portón negro",
+  "latitude": 20.9674,
+  "longitude": -89.5926,
+  "isDefault": true
+}
+
+### Listar mis direcciones
+GET {{Backend_HostAddress}}/api/addresses
+Authorization: Bearer {{AccessToken}}
+
+### Marcar dirección predeterminada
+PATCH {{Backend_HostAddress}}/api/addresses/{{AddressId}}/default
+Authorization: Bearer {{AccessToken}}
+
+### Solicitar recuperación
+POST {{Backend_HostAddress}}/api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "carlos@example.com"
+}
+
+### Cerrar sesión
+POST {{Backend_HostAddress}}/api/auth/logout
+
+### Categorías públicas de comercio
+GET {{Backend_HostAddress}}/api/catalog/store-categories
+
+### Buscar comercios o productos
+GET {{Backend_HostAddress}}/api/catalog/stores?search=hamburguesa&openOnly=false
+
+### Registrar mi comercio (el token actual puede tener solo rol Customer)
+POST {{Backend_HostAddress}}/api/merchant/store
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "storeCategoryId": 1,
+  "name": "Cocina del Mayab",
+  "description": "Platillos yucatecos preparados todos los días.",
+  "phoneNumber": "9991234567",
+  "email": "comercio@example.com",
+  "logoUrl": "https://example.com/logo.jpg",
+  "coverImageUrl": "https://example.com/portada.jpg",
+  "street": "Calle 60",
+  "exteriorNumber": "425",
+  "interiorNumber": null,
+  "neighborhood": "Centro",
+  "city": "Mérida",
+  "state": "Yucatán",
+  "postalCode": "97000",
+  "latitude": 20.9674,
+  "longitude": -89.5926,
+  "deliveryFee": 25,
+  "minimumOrderAmount": 100,
+  "estimatedDeliveryMinutesMin": 20,
+  "estimatedDeliveryMinutesMax": 35,
+  "isOpen": true
+}
+
+### Renovar token después de registrar el comercio
+POST {{Backend_HostAddress}}/api/auth/refresh
+
+### Crear categoría de productos (usa el nuevo token Merchant)
+POST {{Backend_HostAddress}}/api/merchant/categories
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "name": "Platillos",
+  "displayOrder": 1,
+  "isActive": true
+}
+
+### Publicar producto
+POST {{Backend_HostAddress}}/api/merchant/products
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "productCategoryId": "{{ProductCategoryId}}",
+  "name": "Poc chuc",
+  "description": "Cerdo marinado acompañado de guarniciones locales.",
+  "price": 165.50,
+  "imageUrl": "https://example.com/poc-chuc.jpg",
+  "isAvailable": true,
+  "isFeatured": true,
+  "preparationTimeMinutes": 25,
+  "stockQuantity": 20
+}
+
+### Consultar comercio público
+GET {{Backend_HostAddress}}/api/catalog/stores/{{StoreId}}
+
+### Consultar productos públicos
+GET {{Backend_HostAddress}}/api/catalog/stores/{{StoreId}}/products
+
+### Actualizar producto propio
+PUT {{Backend_HostAddress}}/api/merchant/products/{{ProductId}}
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "productCategoryId": "{{ProductCategoryId}}",
+  "name": "Poc chuc especial",
+  "description": "Cerdo marinado con guarniciones locales.",
+  "price": 175,
+  "imageUrl": "https://example.com/poc-chuc.jpg",
+  "isAvailable": true,
+  "isFeatured": true,
+  "preparationTimeMinutes": 25,
+  "stockQuantity": 20
+}
+
+### Registrar método de pago enmascarado
+POST {{Backend_HostAddress}}/api/payment-methods
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "type": "Card",
+  "displayName": "Visa •••• 4242",
+  "provider": null,
+  "cardBrand": "Visa",
+  "lastFourDigits": "4242",
+  "expirationMonth": 8,
+  "expirationYear": 2029,
+  "isDefault": true
+}
+
+### Crear pedido desde el checkout
+POST {{Backend_HostAddress}}/api/orders
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "storeId": "{{StoreId}}",
+  "deliveryAddressId": "{{AddressId}}",
+  "paymentMethodId": "{{PaymentMethodId}}",
+  "customerNotes": "Entregar en recepción.",
+  "items": [
+    {
+      "productId": "{{ProductId}}",
+      "quantity": 2,
+      "notes": "Sin cebolla."
+    }
+  ]
+}
+
+### Historial del cliente
+GET {{Backend_HostAddress}}/api/orders
+Authorization: Bearer {{AccessToken}}
+
+### Pedido activo más reciente para seguimiento
+GET {{Backend_HostAddress}}/api/orders/latest?trackableOnly=true
+Authorization: Bearer {{AccessToken}}
+
+### Historial del comercio
+GET {{Backend_HostAddress}}/api/merchant/orders
+Authorization: Bearer {{AccessToken}}
+
+### Confirmar pedido como comercio
+PATCH {{Backend_HostAddress}}/api/merchant/orders/{{OrderId}}/status
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "status": "Confirmed",
+  "note": "Pedido confirmado por el comercio."
+}
+
+### Registrar perfil de repartidor
+POST {{Backend_HostAddress}}/api/drivers
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "vehicleType": "Motorcycle",
+  "vehicleBrand": "Honda",
+  "vehicleModel": "Cargo",
+  "vehicleColor": "Rojo",
+  "vehiclePlate": "YUC123A",
+  "driverLicenseNumber": "LIC-2026-001",
+  "profilePhotoUrl": "https://example.com/driver.jpg",
+  "identificationDocumentUrl": "https://example.com/identificacion.pdf",
+  "driverLicenseDocumentUrl": "https://example.com/licencia.pdf"
+}
+
+### Actualizar ubicación del repartidor
+PUT {{Backend_HostAddress}}/api/drivers/me/location
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "latitude": 20.9674,
+  "longitude": -89.5926
+}
+
+### Activar disponibilidad
+PATCH {{Backend_HostAddress}}/api/drivers/me/availability
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "status": "Available"
+}
+
+### Entregas ordenadas por eficiencia
+GET {{Backend_HostAddress}}/api/delivery-assignments/available
+Authorization: Bearer {{AccessToken}}
+
+### Calcular ruta con parada en el comercio
+POST {{Backend_HostAddress}}/api/routes/best
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "origin": { "latitude": 20.9700, "longitude": -89.6100 },
+  "waypoint": { "latitude": 20.9674, "longitude": -89.5926 },
+  "destination": { "latitude": 20.9600, "longitude": -89.6200 },
+  "profile": "driving"
+}

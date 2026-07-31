@@ -29,11 +29,19 @@ public sealed class User
         new List<Address>();
 
     public ICollection<Store> OwnedStores { get; set; } =
-    new List<Store>();    
-    public ICollection<PaymentMethod> PaymentMethods { get; set; } =
-    new List<PaymentMethod>();
+        new List<Store>();
 
-public ICollection<Order> Orders { get; set; } =
-    new List<Order>();
+    public ICollection<PaymentMethod> PaymentMethods { get; set; } =
+        new List<PaymentMethod>();
+
+    public ICollection<Order> Orders { get; set; } =
+        new List<Order>();
+
     public DriverProfile? DriverProfile { get; set; }
+
+    public ICollection<RefreshToken> RefreshTokens { get; set; } =
+        new List<RefreshToken>();
+
+    public ICollection<PasswordResetToken> PasswordResetTokens { get; set; } =
+        new List<PasswordResetToken>();
 }

@@ -1,29 +1,300 @@
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json.Serialization;
+using Backend.Authorization;
 using Backend.Data;
+using Backend.Hubs;
+using Backend.Infrastructure.Auth;
+using Backend.Middleware;
+using Backend.Models;
+using Backend.Services.Addresses;
+using Backend.Services.Auth;
+using Backend.Services.Catalog;
+using Backend.Services.Deliveries;
+using Backend.Services.Drivers;
+using Backend.Services.Orders;
+using Backend.Services.Payments;
+using Backend.Services.Routing;
+using Backend.Services.Users;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString =
-    builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException(
-        "No se encontró ConnectionStrings:DefaultConnection."
-    );
-
 var serverVersion = new MariaDbServerVersion(new Version(12, 3, 2));
 
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+{
+    var connectionString = serviceProvider
+        .GetRequiredService<IConfiguration>()
+        .GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException(
+            "No se encontró ConnectionStrings:DefaultConnection."
+        );
+
     options.UseMySql(
-        connectionString,
-        serverVersion,
-        mysqlOptions => mysqlOptions.EnableRetryOnFailure()
-    )
+            connectionString,
+            serverVersion,
+            mysqlOptions => mysqlOptions.EnableRetryOnFailure()
+        );
+    }
 );
 
-builder.Services.AddControllers();
+var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
+
+builder.Services
+    .AddOptions<JwtOptions>()
+    .Bind(jwtSection)
+    .Validate(options =>
+        !string.IsNullOrWhiteSpace(options.Issuer)
+        && !string.IsNullOrWhiteSpace(options.Audience),
+        "Jwt:Issuer y Jwt:Audience son obligatorios."
+    )
+    .Validate(options =>
+        Encoding.UTF8.GetByteCount(options.Key) >= 32,
+        "Jwt:Key debe tener al menos 32 bytes."
+    )
+    .Validate(options =>
+        options.AccessTokenMinutes is >= 5 and <= 60
+        && options.RefreshTokenDays is >= 1 and <= 30
+        && options.PasswordResetTokenMinutes is >= 5 and <= 60,
+        "Los tiempos configurados para JWT no son válidos."
+    )
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<RoutingOptions>()
+    .Bind(builder.Configuration.GetSection(RoutingOptions.SectionName))
+    .Validate(
+        options =>
+            Uri.TryCreate(
+                options.BaseUrl,
+                UriKind.Absolute,
+                out _
+            )
+            && options.TimeoutSeconds is >= 2 and <= 30,
+        "La configuración del proveedor de rutas no es válida."
+    )
+    .ValidateOnStart();
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer();
+
+builder.Services
+    .AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IOptions<JwtOptions>>((options, jwtOptionsAccessor) =>
+    {
+        var jwtOptions = jwtOptionsAccessor.Value;
+
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtOptions.Audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtOptions.Key)
+            ),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+            NameClaimType = ClaimTypes.NameIdentifier,
+            RoleClaimType = ClaimTypes.Role
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                if (
+                    !string.IsNullOrWhiteSpace(accessToken)
+                    && context.HttpContext.Request.Path.StartsWithSegments(
+                        "/hubs/tracking"
+                    )
+                )
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("MerchantOnly", policy =>
+        policy.RequireRole("Merchant", "Admin")
+    );
+    options.AddPolicy("DriverOnly", policy =>
+        policy.RequireRole("Driver", "Admin")
+    );
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin")
+    );
+});
+
+var allowedOrigins =
+    builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? [];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+builder.Services
+    .AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        )
+    );
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var problem = new ValidationProblemDetails(context.ModelState)
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = "Uno o más datos no son válidos.",
+            Instance = context.HttpContext.Request.Path
+        };
+
+        problem.Extensions["errorCode"] = "validation_error";
+        problem.Extensions["traceId"] =
+            context.HttpContext.TraceIdentifier;
+
+        return new BadRequestObjectResult(problem);
+    };
+});
+
+builder.Services.Configure<PasswordHasherOptions>(options =>
+{
+    options.IterationCount = 120_000;
+});
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddSingleton<ITokenGenerator, SecureTokenGenerator>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IAddressService, AddressService>();
+builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.AddScoped<IMerchantCatalogService, MerchantCatalogService>();
+builder.Services.AddScoped<IDriverService, DriverService>();
+builder.Services.AddScoped<
+    IDeliveryAssignmentService,
+    DeliveryAssignmentService
+>();
+builder.Services.AddScoped<ITrackingService, TrackingService>();
+builder.Services.AddScoped<ITrackingNotifier, SignalRTrackingNotifier>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IPaymentMethodService, PaymentMethodService>();
+builder.Services.AddHttpClient<IRoutingService, OsrmRoutingService>(
+    (serviceProvider, client) =>
+    {
+        var options = serviceProvider
+            .GetRequiredService<IOptions<RoutingOptions>>()
+            .Value;
+        client.BaseAddress = new Uri(
+            options.BaseUrl.TrimEnd('/') + "/"
+        );
+        client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(
+            "AppDeliveryMVP/1.0"
+        );
+    }
+);
+
+builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "AppDelivery API",
+        Version = "v1"
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Introduce el access token JWT."
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseStatusCodePages(async statusCodeContext =>
+{
+    var response = statusCodeContext.HttpContext.Response;
+    var request = statusCodeContext.HttpContext.Request;
+    var title = response.StatusCode switch
+    {
+        StatusCodes.Status401Unauthorized => "No autorizado",
+        StatusCodes.Status403Forbidden => "Acceso denegado",
+        StatusCodes.Status404NotFound => "Recurso no encontrado",
+        _ => "La solicitud no pudo completarse"
+    };
+
+    var problem = new ProblemDetails
+    {
+        Status = response.StatusCode,
+        Title = title,
+        Instance = request.Path
+    };
+    problem.Extensions["traceId"] =
+        statusCodeContext.HttpContext.TraceIdentifier;
+
+    response.ContentType = "application/problem+json";
+    await response.WriteAsJsonAsync(
+        problem,
+        options: null,
+        contentType: "application/problem+json",
+        cancellationToken: statusCodeContext.HttpContext.RequestAborted
+    );
+});
 
 if (app.Environment.IsDevelopment())
 {
@@ -32,7 +303,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors("Frontend");
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
+app.MapHub<TrackingHub>("/hubs/tracking");
 
 app.MapGet("/api/health/database", async (AppDbContext database) =>
 {
@@ -58,3 +333,7 @@ app.MapGet("/api/health/database", async (AppDbContext database) =>
 .WithOpenApi();
 
 app.Run();
+
+public partial class Program
+{
+}
