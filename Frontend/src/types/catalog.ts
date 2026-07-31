@@ -24,6 +24,7 @@ export type Product = {
   imageUrl: string | null
   isAvailable: boolean
   isFeatured: boolean
+  stockQuantity: number
   preparationTimeMinutes: number
   createdAt: string
   updatedAt: string
@@ -104,5 +105,6 @@ export type SaveProductInput = {
   imageUrl: string | null
   isAvailable: boolean
   isFeatured: boolean
+  stockQuantity: number
   preparationTimeMinutes: number
 }

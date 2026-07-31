@@ -69,7 +69,12 @@ export function ProductModal({ product, onClose, onConfirm }: ProductModalProps)
               <button
                 aria-label="Aumentar cantidad"
                 className="icon-button !size-10"
-                onClick={() => setQuantity((value) => value + 1)}
+                disabled={quantity >= product.stockQuantity}
+                onClick={() =>
+                  setQuantity((value) =>
+                    Math.min(product.stockQuantity, value + 1),
+                  )
+                }
                 type="button"
               >
                 <Icon name="add" />

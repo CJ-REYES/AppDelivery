@@ -27,7 +27,9 @@ export function ProductCard({
           <img
             alt={product.name}
             className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.04] ${
-              product.isAvailable ? '' : 'grayscale opacity-60'
+              product.isAvailable && product.stockQuantity > 0
+                ? ''
+                : 'grayscale opacity-60'
             }`}
             loading="lazy"
             src={product.imageUrl}
@@ -48,7 +50,7 @@ export function ProductCard({
               {product.name}
             </h3>
           </div>
-          {!product.isAvailable ? (
+          {!product.isAvailable || product.stockQuantity === 0 ? (
             <span className="status-pill bg-danger/10 text-danger">
               Agotado
             </span>
@@ -64,7 +66,7 @@ export function ProductCard({
           <button
             aria-label={`Agregar ${product.name}`}
             className="inline-flex size-10 items-center justify-center rounded-full bg-accent text-white transition hover:bg-accent-hover active:scale-95 disabled:bg-line disabled:text-muted"
-            disabled={!product.isAvailable}
+            disabled={!product.isAvailable || product.stockQuantity === 0}
             onClick={() => onAdd?.(product)}
             type="button"
           >

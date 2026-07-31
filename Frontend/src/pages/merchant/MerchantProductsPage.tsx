@@ -143,6 +143,7 @@ export function MerchantProductsPage() {
       imageUrl: imageUrl || null,
       isAvailable: form.get('isAvailable') === 'on',
       isFeatured: form.get('isFeatured') === 'on',
+      stockQuantity: Number(form.get('stockQuantity')),
       preparationTimeMinutes: Number(form.get('preparationTimeMinutes')),
     }
     setSaving(true)
@@ -483,6 +484,23 @@ export function MerchantProductsPage() {
                 </div>
                 <label className="mt-4 block">
                   <span className="mb-2 block text-sm font-semibold text-primary">
+                    Existencias
+                  </span>
+                  <input
+                    className="field"
+                    defaultValue={editingProduct?.stockQuantity ?? 100}
+                    max={999999}
+                    min={0}
+                    name="stockQuantity"
+                    required
+                    type="number"
+                  />
+                  <span className="mt-1 block text-xs text-muted">
+                    Cada pedido descuenta automáticamente esta cantidad.
+                  </span>
+                </label>
+                <label className="mt-4 block">
+                  <span className="mb-2 block text-sm font-semibold text-primary">
                     URL de imagen
                   </span>
                   <input
@@ -570,14 +588,19 @@ export function MerchantProductsPage() {
                       <strong className="text-sm text-primary">
                         ${product.price.toFixed(2)}
                       </strong>
+                      <span className="text-xs font-semibold text-muted">
+                        Stock: {product.stockQuantity}
+                      </span>
                       <span
                         className={`status-pill ${
-                          product.isAvailable
+                          product.isAvailable && product.stockQuantity > 0
                             ? 'bg-success/10 text-success'
                             : 'bg-danger/10 text-danger'
                         }`}
                       >
-                        {product.isAvailable ? 'Disponible' : 'Agotado'}
+                        {product.isAvailable && product.stockQuantity > 0
+                          ? 'Disponible'
+                          : 'Agotado'}
                       </span>
                       <button
                         aria-label={`Editar ${product.name}`}

@@ -3,9 +3,11 @@ import {
   createContext,
   type ReactNode,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from 'react'
+import type { Product } from '../types/catalog'
 
 export type CustomerProfile = {
   firstName: string
@@ -25,6 +27,8 @@ export type Address = {
   receiver: string
   phone: string
   references: string
+  latitude: number | null
+  longitude: number | null
   isPrimary: boolean
 }
 
@@ -66,12 +70,23 @@ export type DriverProfile = {
   insurance: boolean
 }
 
+export type CartItem = {
+  productId: string
+  storeId: string
+  name: string
+  price: number
+  imageUrl: string | null
+  stockQuantity: number
+  quantity: number
+}
+
 type AppState = {
   profile: CustomerProfile
   addresses: Address[]
   paymentMethods: PaymentMethod[]
   merchant: MerchantProfile
   driver: DriverProfile
+  cart: CartItem[]
 }
 
 type AppStateContextValue = AppState & {
@@ -84,6 +99,9 @@ type AppStateContextValue = AppState & {
   setPrimaryPaymentMethod: (id: string) => void
   saveMerchant: (merchant: MerchantProfile) => void
   saveDriver: (driver: DriverProfile) => void
+  addCartProduct: (product: Product, quantity?: number) => void
+  updateCartQuantity: (productId: string, delta: number) => void
+  clearCart: () => void
 }
 
 const defaultState: AppState = {
@@ -105,6 +123,8 @@ const defaultState: AppState = {
       receiver: 'Carlos Reyes',
       phone: '+52 999 123 4567',
       references: 'Casa color crema, portón verde.',
+      latitude: 20.9674,
+      longitude: -89.5926,
       isPrimary: true,
     },
     {
@@ -117,6 +137,8 @@ const defaultState: AppState = {
       receiver: 'Carlos Reyes',
       phone: '+52 999 123 4567',
       references: 'Recepción del edificio.',
+      latitude: 20.9902,
+      longitude: -89.6241,
       isPrimary: false,
     },
   ],
@@ -157,12 +179,30 @@ const defaultState: AppState = {
     license: false,
     insurance: false,
   },
+  cart: [],
 }
 
 const AppStateContext = createContext<AppStateContextValue | null>(null)
+const cartStorageKey = 'appdelivery.cart'
+
+function loadCart(): CartItem[] {
+  try {
+    const value = window.localStorage.getItem(cartStorageKey)
+    return value ? (JSON.parse(value) as CartItem[]) : []
+  } catch {
+    return []
+  }
+}
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AppState>(defaultState)
+  const [state, setState] = useState<AppState>(() => ({
+    ...defaultState,
+    cart: loadCart(),
+  }))
+
+  useEffect(() => {
+    window.localStorage.setItem(cartStorageKey, JSON.stringify(state.cart))
+  }, [state.cart])
 
   const value = useMemo<AppStateContextValue>(
     () => ({
@@ -229,6 +269,60 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         })),
       saveMerchant: (merchant) => setState((current) => ({ ...current, merchant })),
       saveDriver: (driver) => setState((current) => ({ ...current, driver })),
+      addCartProduct: (product, quantity = 1) =>
+        setState((current) => {
+          const baseCart = current.cart.some(
+            (item) => item.storeId !== product.storeId,
+          )
+            ? []
+            : current.cart
+          const existing = baseCart.find(
+            (item) => item.productId === product.id,
+          )
+          const nextQuantity = Math.min(
+            product.stockQuantity,
+            (existing?.quantity ?? 0) + quantity,
+          )
+          const item: CartItem = {
+            productId: product.id,
+            storeId: product.storeId,
+            name: product.name,
+            price: product.price,
+            imageUrl: product.imageUrl,
+            stockQuantity: product.stockQuantity,
+            quantity: nextQuantity,
+          }
+          return {
+            ...current,
+            cart: existing
+              ? baseCart.map((currentItem) =>
+                  currentItem.productId === product.id ? item : currentItem,
+                )
+              : [...baseCart, item],
+          }
+        }),
+      updateCartQuantity: (productId, delta) =>
+        setState((current) => ({
+          ...current,
+          cart: current.cart
+            .map((item) =>
+              item.productId === productId
+                ? {
+                    ...item,
+                    quantity: Math.min(
+                      item.stockQuantity,
+                      Math.max(0, item.quantity + delta),
+                    ),
+                  }
+                : item,
+            )
+            .filter((item) => item.quantity > 0),
+        })),
+      clearCart: () =>
+        setState((current) => ({
+          ...current,
+          cart: [],
+        })),
     }),
     [state],
   )

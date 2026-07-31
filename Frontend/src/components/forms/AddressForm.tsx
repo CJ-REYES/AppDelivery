@@ -23,6 +23,8 @@ export function AddressForm({ initial, onCancel, onSave }: AddressFormProps) {
       receiver: String(data.get('receiver')).trim(),
       phone: String(data.get('phone')).trim(),
       references: String(data.get('references')).trim(),
+      latitude: initial?.latitude ?? null,
+      longitude: initial?.longitude ?? null,
       isPrimary: data.get('isPrimary') === 'on',
     })
   }

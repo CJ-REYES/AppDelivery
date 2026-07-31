@@ -5,6 +5,7 @@ import { Icon } from '../common/Icon'
 
 const links = [
   ['Panel', '/mi-comercio'],
+  ['Pedidos', '/mi-comercio/pedidos'],
   ['Productos', '/mi-comercio/productos'],
   ['Perfil', '/mi-comercio/perfil'],
 ] as const

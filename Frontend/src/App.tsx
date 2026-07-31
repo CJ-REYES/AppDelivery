@@ -18,6 +18,7 @@ import { SearchPage } from './pages/client/SearchPage'
 import { StorePage } from './pages/client/StorePage'
 import { TrackingPage } from './pages/client/TrackingPage'
 import { MerchantDashboardPage } from './pages/merchant/MerchantDashboardPage'
+import { MerchantOrdersPage } from './pages/merchant/MerchantOrdersPage'
 import { MerchantProductsPage } from './pages/merchant/MerchantProductsPage'
 import { MerchantProfilePage } from './pages/merchant/MerchantProfilePage'
 import { MerchantRegistrationPage } from './pages/merchant/MerchantRegistrationPage'
@@ -112,8 +113,22 @@ function AppRoutes() {
         <Route element={<SearchPage />} path="/buscar" />
         <Route element={<StorePage />} path="/comercio/:storeId" />
 
-        <Route element={<CheckoutPage />} path="/checkout" />
-        <Route element={<OrdersPage />} path="/pedidos" />
+        <Route
+          element={
+            <RequireAuth>
+              <CheckoutPage />
+            </RequireAuth>
+          }
+          path="/checkout"
+        />
+        <Route
+          element={
+            <RequireAuth>
+              <OrdersPage />
+            </RequireAuth>
+          }
+          path="/pedidos"
+        />
         <Route element={<TrackingPage />} path="/seguimiento" />
 
         <Route
@@ -139,6 +154,14 @@ function AppRoutes() {
             </RequireAuth>
           }
           path="/mi-comercio/productos"
+        />
+        <Route
+          element={
+            <RequireAuth role="Merchant">
+              <MerchantOrdersPage />
+            </RequireAuth>
+          }
+          path="/mi-comercio/pedidos"
         />
         <Route
           element={

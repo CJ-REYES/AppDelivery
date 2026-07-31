@@ -45,12 +45,19 @@ npm --prefix Frontend run build
 | `/inicio` | Inicio conectado al catálogo |
 | `/buscar` | Búsqueda y filtros |
 | `/comercio/:storeId` | Comercio y productos públicos |
+| `/checkout` | Creación persistente del pedido |
+| `/pedidos` | Pedidos activos e historial del cliente |
 | `/perfil` | Perfil y CRUD de direcciones del usuario autenticado |
 | `/unete` | Selección de perfil adicional |
 | `/registro-comercio` | Registro del comercio autenticado |
 | `/mi-comercio` | Panel del comercio |
+| `/mi-comercio/pedidos` | Pedidos recibidos por el comercio |
 | `/mi-comercio/productos` | CRUD de categorías y productos |
 | `/mi-comercio/perfil` | Edición del comercio |
+
+El carrito se conserva en `localStorage`; pedidos, estados, direcciones y
+métodos de pago se consultan desde la API. Los métodos de tarjeta guardan
+únicamente datos enmascarados y esta etapa no ejecuta cobros bancarios reales.
 
 La correspondencia completa entre páginas, endpoints y pruebas está en
 `docs/05-trazabilidad.md`.
