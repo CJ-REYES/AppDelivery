@@ -1,6 +1,9 @@
-@Backend_HostAddress = https://localhost:7114
+@Backend_HostAddress = http://localhost:5258
 @AccessToken = REEMPLAZA_CON_EL_ACCESS_TOKEN
 @AddressId = REEMPLAZA_CON_EL_ID_DE_DIRECCION
+@StoreId = REEMPLAZA_CON_EL_ID_DEL_COMERCIO
+@ProductCategoryId = REEMPLAZA_CON_EL_ID_DE_CATEGORIA
+@ProductId = REEMPLAZA_CON_EL_ID_DEL_PRODUCTO
 
 ### Registrar cliente
 POST {{Backend_HostAddress}}/api/auth/register
@@ -80,3 +83,90 @@ Content-Type: application/json
 
 ### Cerrar sesión
 POST {{Backend_HostAddress}}/api/auth/logout
+
+### Categorías públicas de comercio
+GET {{Backend_HostAddress}}/api/catalog/store-categories
+
+### Buscar comercios o productos
+GET {{Backend_HostAddress}}/api/catalog/stores?search=hamburguesa&openOnly=false
+
+### Registrar mi comercio (el token actual puede tener solo rol Customer)
+POST {{Backend_HostAddress}}/api/merchant/store
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "storeCategoryId": 1,
+  "name": "Cocina del Mayab",
+  "description": "Platillos yucatecos preparados todos los días.",
+  "phoneNumber": "9991234567",
+  "email": "comercio@example.com",
+  "logoUrl": "https://example.com/logo.jpg",
+  "coverImageUrl": "https://example.com/portada.jpg",
+  "street": "Calle 60",
+  "exteriorNumber": "425",
+  "interiorNumber": null,
+  "neighborhood": "Centro",
+  "city": "Mérida",
+  "state": "Yucatán",
+  "postalCode": "97000",
+  "latitude": 20.9674,
+  "longitude": -89.5926,
+  "deliveryFee": 25,
+  "minimumOrderAmount": 100,
+  "estimatedDeliveryMinutesMin": 20,
+  "estimatedDeliveryMinutesMax": 35,
+  "isOpen": true
+}
+
+### Renovar token después de registrar el comercio
+POST {{Backend_HostAddress}}/api/auth/refresh
+
+### Crear categoría de productos (usa el nuevo token Merchant)
+POST {{Backend_HostAddress}}/api/merchant/categories
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "name": "Platillos",
+  "displayOrder": 1,
+  "isActive": true
+}
+
+### Publicar producto
+POST {{Backend_HostAddress}}/api/merchant/products
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "productCategoryId": "{{ProductCategoryId}}",
+  "name": "Poc chuc",
+  "description": "Cerdo marinado acompañado de guarniciones locales.",
+  "price": 165.50,
+  "imageUrl": "https://example.com/poc-chuc.jpg",
+  "isAvailable": true,
+  "isFeatured": true,
+  "preparationTimeMinutes": 25
+}
+
+### Consultar comercio público
+GET {{Backend_HostAddress}}/api/catalog/stores/{{StoreId}}
+
+### Consultar productos públicos
+GET {{Backend_HostAddress}}/api/catalog/stores/{{StoreId}}/products
+
+### Actualizar producto propio
+PUT {{Backend_HostAddress}}/api/merchant/products/{{ProductId}}
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "productCategoryId": "{{ProductCategoryId}}",
+  "name": "Poc chuc especial",
+  "description": "Cerdo marinado con guarniciones locales.",
+  "price": 175,
+  "imageUrl": "https://example.com/poc-chuc.jpg",
+  "isAvailable": true,
+  "isFeatured": true,
+  "preparationTimeMinutes": 25
+}

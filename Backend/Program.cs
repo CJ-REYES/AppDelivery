@@ -7,6 +7,7 @@ using Backend.Middleware;
 using Backend.Models;
 using Backend.Services.Addresses;
 using Backend.Services.Auth;
+using Backend.Services.Catalog;
 using Backend.Services.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -147,6 +148,8 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
+builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.AddScoped<IMerchantCatalogService, MerchantCatalogService>();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
