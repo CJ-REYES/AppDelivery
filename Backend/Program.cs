@@ -3,14 +3,18 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Backend.Authorization;
 using Backend.Data;
+using Backend.Hubs;
 using Backend.Infrastructure.Auth;
 using Backend.Middleware;
 using Backend.Models;
 using Backend.Services.Addresses;
 using Backend.Services.Auth;
 using Backend.Services.Catalog;
+using Backend.Services.Deliveries;
+using Backend.Services.Drivers;
 using Backend.Services.Orders;
 using Backend.Services.Payments;
+using Backend.Services.Routing;
 using Backend.Services.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -22,20 +26,23 @@ using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString =
-    builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException(
-        "No se encontró ConnectionStrings:DefaultConnection."
-    );
-
 var serverVersion = new MariaDbServerVersion(new Version(12, 3, 2));
 
-builder.Services.AddDbContext<AppDbContext>(options =>
+builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+{
+    var connectionString = serviceProvider
+        .GetRequiredService<IConfiguration>()
+        .GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException(
+            "No se encontró ConnectionStrings:DefaultConnection."
+        );
+
     options.UseMySql(
-        connectionString,
-        serverVersion,
-        mysqlOptions => mysqlOptions.EnableRetryOnFailure()
-    )
+            connectionString,
+            serverVersion,
+            mysqlOptions => mysqlOptions.EnableRetryOnFailure()
+        );
+    }
 );
 
 var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
@@ -57,6 +64,21 @@ builder.Services
         && options.RefreshTokenDays is >= 1 and <= 30
         && options.PasswordResetTokenMinutes is >= 5 and <= 60,
         "Los tiempos configurados para JWT no son válidos."
+    )
+    .ValidateOnStart();
+
+builder.Services
+    .AddOptions<RoutingOptions>()
+    .Bind(builder.Configuration.GetSection(RoutingOptions.SectionName))
+    .Validate(
+        options =>
+            Uri.TryCreate(
+                options.BaseUrl,
+                UriKind.Absolute,
+                out _
+            )
+            && options.TimeoutSeconds is >= 2 and <= 30,
+        "La configuración del proveedor de rutas no es válida."
     )
     .ValidateOnStart();
 
@@ -85,6 +107,26 @@ builder.Services
             ClockSkew = TimeSpan.FromSeconds(30),
             NameClaimType = ClaimTypes.NameIdentifier,
             RoleClaimType = ClaimTypes.Role
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                if (
+                    !string.IsNullOrWhiteSpace(accessToken)
+                    && context.HttpContext.Request.Path.StartsWithSegments(
+                        "/hubs/tracking"
+                    )
+                )
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -149,6 +191,7 @@ builder.Services.Configure<PasswordHasherOptions>(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSignalR();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -159,8 +202,30 @@ builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IMerchantCatalogService, MerchantCatalogService>();
+builder.Services.AddScoped<IDriverService, DriverService>();
+builder.Services.AddScoped<
+    IDeliveryAssignmentService,
+    DeliveryAssignmentService
+>();
+builder.Services.AddScoped<ITrackingService, TrackingService>();
+builder.Services.AddScoped<ITrackingNotifier, SignalRTrackingNotifier>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPaymentMethodService, PaymentMethodService>();
+builder.Services.AddHttpClient<IRoutingService, OsrmRoutingService>(
+    (serviceProvider, client) =>
+    {
+        var options = serviceProvider
+            .GetRequiredService<IOptions<RoutingOptions>>()
+            .Value;
+        client.BaseAddress = new Uri(
+            options.BaseUrl.TrimEnd('/') + "/"
+        );
+        client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(
+            "AppDeliveryMVP/1.0"
+        );
+    }
+);
 
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
@@ -242,6 +307,7 @@ app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHub<TrackingHub>("/hubs/tracking");
 
 app.MapGet("/api/health/database", async (AppDbContext database) =>
 {

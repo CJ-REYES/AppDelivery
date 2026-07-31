@@ -1,4 +1,6 @@
 using Backend.Data;
+using Backend.Contracts.Routing;
+using Backend.Services.Routing;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -36,9 +38,13 @@ public sealed class CustomWebApplicationFactory
         {
             services.RemoveAll<AppDbContext>();
             services.RemoveAll<DbContextOptions<AppDbContext>>();
+            services.RemoveAll<IRoutingService>();
 
             services.AddDbContext<AppDbContext>(options =>
                 options.UseInMemoryDatabase(_databaseName)
+            );
+            services.AddSingleton<IRoutingService>(
+                new TestRoutingService()
             );
         });
     }
@@ -61,4 +67,33 @@ public sealed class CustomWebApplicationFactory
             AllowAutoRedirect = false,
             HandleCookies = true
         });
+
+    private sealed class TestRoutingService : IRoutingService
+    {
+        public Task<RouteResponse> CalculateAsync(
+            IReadOnlyCollection<RoutePointResponse> points,
+            string? profile,
+            CancellationToken cancellationToken
+        )
+        {
+            var geometry = points.ToArray();
+            var distance = 0d;
+
+            for (var index = 1; index < geometry.Length; index++)
+            {
+                distance += OsrmRoutingService.HaversineMeters(
+                    geometry[index - 1],
+                    geometry[index]
+                );
+            }
+
+            return Task.FromResult(new RouteResponse(
+                distance,
+                distance / 7d,
+                geometry,
+                IsEstimated: false,
+                profile ?? "driving"
+            ));
+        }
+    }
 }

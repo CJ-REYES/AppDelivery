@@ -148,8 +148,8 @@ Content-Type: application/json
   "imageUrl": "https://example.com/poc-chuc.jpg",
   "isAvailable": true,
   "isFeatured": true,
-  "stockQuantity": 20,
-  "preparationTimeMinutes": 25
+  "preparationTimeMinutes": 25,
+  "stockQuantity": 20
 }
 
 ### Consultar comercio público
@@ -171,8 +171,8 @@ Content-Type: application/json
   "imageUrl": "https://example.com/poc-chuc.jpg",
   "isAvailable": true,
   "isFeatured": true,
-  "stockQuantity": 20,
-  "preparationTimeMinutes": 25
+  "preparationTimeMinutes": 25,
+  "stockQuantity": 20
 }
 
 ### Registrar método de pago enmascarado
@@ -214,6 +214,10 @@ Content-Type: application/json
 GET {{Backend_HostAddress}}/api/orders
 Authorization: Bearer {{AccessToken}}
 
+### Pedido activo más reciente para seguimiento
+GET {{Backend_HostAddress}}/api/orders/latest?trackableOnly=true
+Authorization: Bearer {{AccessToken}}
+
 ### Historial del comercio
 GET {{Backend_HostAddress}}/api/merchant/orders
 Authorization: Bearer {{AccessToken}}
@@ -226,4 +230,56 @@ Content-Type: application/json
 {
   "status": "Confirmed",
   "note": "Pedido confirmado por el comercio."
+}
+
+### Registrar perfil de repartidor
+POST {{Backend_HostAddress}}/api/drivers
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "vehicleType": "Motorcycle",
+  "vehicleBrand": "Honda",
+  "vehicleModel": "Cargo",
+  "vehicleColor": "Rojo",
+  "vehiclePlate": "YUC123A",
+  "driverLicenseNumber": "LIC-2026-001",
+  "profilePhotoUrl": "https://example.com/driver.jpg",
+  "identificationDocumentUrl": "https://example.com/identificacion.pdf",
+  "driverLicenseDocumentUrl": "https://example.com/licencia.pdf"
+}
+
+### Actualizar ubicación del repartidor
+PUT {{Backend_HostAddress}}/api/drivers/me/location
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "latitude": 20.9674,
+  "longitude": -89.5926
+}
+
+### Activar disponibilidad
+PATCH {{Backend_HostAddress}}/api/drivers/me/availability
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "status": "Available"
+}
+
+### Entregas ordenadas por eficiencia
+GET {{Backend_HostAddress}}/api/delivery-assignments/available
+Authorization: Bearer {{AccessToken}}
+
+### Calcular ruta con parada en el comercio
+POST {{Backend_HostAddress}}/api/routes/best
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "origin": { "latitude": 20.9700, "longitude": -89.6100 },
+  "waypoint": { "latitude": 20.9674, "longitude": -89.5926 },
+  "destination": { "latitude": 20.9600, "longitude": -89.6200 },
+  "profile": "driving"
 }
